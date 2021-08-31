@@ -1,0 +1,13 @@
+{
+	"objectId": 1,
+	"groupId": 1,
+	"objectName": "serrure keypad",
+	"activeLeds": 4,
+	"codeSerrure": "11411111",
+	"tailleCode": 3,
+	"nbErreurCodeMax": 3,
+	"nbErreurCode": 0,
+	"intervalBlocage": 5,
+	"statutSerrureActuel": 1,
+	"statutSerrurePrecedent": 1
+}

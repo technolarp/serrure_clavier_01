@@ -1,26 +1,27 @@
 /*
- * ----------------------------------------------------------------------------
- * For this exemple you will need
- * 1 4*4 matrix keypad and 1 i2c PCF8574 board
- * 1 neopixel ring
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   For this exemple you will need
+   1 4*4 matrix keypad and 1 i2c PCF8574 board
+   1 neopixel ring
+   1 piezo buzzer
+   ----------------------------------------------------------------------------
+*/
 
 /*
- * ----------------------------------------------------------------------------
- * PINOUT
- * A0     PHOTORESISTOR + pulldown / POTENTIOMETER
- * D0     NEOPIXEL
- * D1     I2C SCL     
- * D2     I2C SDA     
- * D3     TM1637 DIO  /  MRF522 RST_PIN
- * D4     BUILTIN LED  /  MRF522 SS_PIN-SDA 
- * D5     TM1637 CLK  /  MRF522 SCK
- * D6     ROTARY_CLK  /  MRF522 MISO
- * D7     ROTARY_DT  /  MRF522 MOSI
- * D8     BUZZER 
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   PINOUT
+   A0     PHOTORESISTOR + pulldown / POTENTIOMETER
+   D0     NEOPIXEL
+   D1     I2C SCL
+   D2     I2C SDA
+   D3     TM1637 DIO
+   D4     BUILTIN LED
+   D5     TM1637 CLK
+   D6     ROTARY_CLK
+   D7     ROTARY_DT
+   D8     BUZZER
+   ----------------------------------------------------------------------------
+*/
 
 #include <arduino.h>
 
@@ -42,58 +43,79 @@ M_keypad* aKeypad;
 #include <technolarp_buzzer.h>
 M_buzzer* buzzer;
 
+// CONFIG
+#include "config.h"
+M_config m_config;
 
-// DIVERS
-// CODE DE LA SERRURE
-char codeSerrure[4]={'1','2','3','4'};
-char codeSerrureActuel[4]={'0','0','0','0'};
-
-// BLOCAGE DE LA SERRURE
-int erreurCodeMax = 3;
-int nbErreur=0;
-int tempoBlocage = 5;
+// CODE ACTUEL DE LA SERRURE
+char codeSerrureActuel[4] = {'0', '0', '0', '0'};
 
 // STATUTS DE LA SERRURE
 enum {
-  SERRURE_OUVERTE=0, 
-  SERRURE_FERMEE=1,
-  SERRURE_BLOQUEE=2,
-  SERRURE_ERREUR=3
-  };
+  SERRURE_OUVERTE = 0,
+  SERRURE_FERMEE = 1,
+  SERRURE_BLOQUEE = 2,
+  SERRURE_ERREUR = 3
+};
 
-byte statutSerrureActuel=SERRURE_FERMEE;
-byte statutSerrurePrecedent=SERRURE_FERMEE;
-
-
+// DIVERS
 unsigned long int refTime = 0;
-
 bool uneFois = true;
 
 /*
- * ----------------------------------------------------------------------------
- * SETUP
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   SETUP
+   ----------------------------------------------------------------------------
+*/
 void setup()
 {
   Serial.begin(115200);
 
+  // CONFIG
+  delay(500);
+  Serial.println(F(""));
+  Serial.println(F(""));
+  m_config.mountFS();
+  m_config.listDir("/");
+  m_config.listDir("/config");
+  m_config.printJsonFile("/config/objectconfig.txt");
+  m_config.readObjectConfig("/config/objectconfig.txt");
+
+
   // LED RGB
   neopixels = new M_neopixel(&globalScheduler);
-  
+  neopixels->setNbLed(m_config.myConfig.activeLeds);
+
   // animation led de depart
-  for (int i=0;i<NB_LEDS*2;i++)
+  neopixels->allLedOff();
+  for (int i = 0; i < m_config.myConfig.activeLeds * 2; i++)
   {
-    neopixels->ledOn(i%NB_LEDS, CRGB::Blue);
+    neopixels->ledOn(i % m_config.myConfig.activeLeds, CRGB::Blue);
     delay(50);
-    neopixels->ledOn(i%NB_LEDS, CRGB::Black);
+    neopixels->ledOn(i % m_config.myConfig.activeLeds, CRGB::Black);
   }
   neopixels->allLedOff();
 
   // KEYPAD
   aKeypad = new M_keypad();
 
-  aKeypad->checkReset();
+  if (aKeypad->checkReset())
+  {
+    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
+    {
+      neopixels->setLed(i, CRGB::Yellow);
+    }
+    neopixels->ledShow();
+    
+    Serial.println("");
+    Serial.println("!!! RESET CONFIG !!!");
+    Serial.println("");
+    m_config.writeDefaultObjectConfig("/config/objectconfig.txt");
+    m_config.printJsonFile("/config/objectconfig.txt");
+    //m_config.readObjectConfig("/config/objectconfig.txt");
+
+    delay(1000);
+  }
 
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
@@ -102,40 +124,40 @@ void setup()
   // SERIAL
   Serial.println(F(""));
   Serial.println(F(""));
-  Serial.println(F("START !!!"));  
+  Serial.println(F("START !!!"));
 }
 /*
- * ----------------------------------------------------------------------------
- * FIN DU SETUP
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   FIN DU SETUP
+   ----------------------------------------------------------------------------
+*/
 
 
 
 
 /*
- * ----------------------------------------------------------------------------
- * LOOP
- * ----------------------------------------------------------------------------
- */  
+   ----------------------------------------------------------------------------
+   LOOP
+   ----------------------------------------------------------------------------
+*/
 void loop()
 {
   // manage task scheduler
   globalScheduler.execute();
-  
+
   // gerer le statut de la serrure
-  switch (statutSerrureActuel)
-    {
+  switch (m_config.myConfig.statutSerrureActuel)
+  {
     case SERRURE_FERMEE:
       // la serrure est fermee
       serrureFermee();
       break;
-  
+
     case SERRURE_OUVERTE:
-    // la serrure est ouverte
+      // la serrure est ouverte
       serrureOuverte();
       break;
-  
+
     case SERRURE_BLOQUEE:
       // la serrure est bloquee
       serrureBloquee();
@@ -145,29 +167,32 @@ void loop()
       // un code incorrect a ete entrer
       serrureErreur();
       break;
-    
+
     default:
       // nothing
-      break; 
-    }
+      break;
+  }
+
+  // check changement de parametres via le keypad
+  checkChangementParametres();
 }
 /*
- * ----------------------------------------------------------------------------
- * FIN DU LOOP
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   FIN DU LOOP
+   ----------------------------------------------------------------------------
+*/
 
 
 
 
 
 /*
- * ----------------------------------------------------------------------------
- * FONCTIONS ADDITIONNELLES
- * ----------------------------------------------------------------------------
- */
+   ----------------------------------------------------------------------------
+   FONCTIONS ADDITIONNELLES
+   ----------------------------------------------------------------------------
+*/
 
- void serrureFermee()
+void serrureFermee()
 {
   if (uneFois)
   {
@@ -175,12 +200,12 @@ void loop()
 
     // on allume les led rouge
     neopixels->allLedOff();
-    for (int i=0;i<NB_LEDS;i++)
+    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
     {
       neopixels->setLed(i, CRGB::Red);
     }
     neopixels->ledShow();
-  }  
+  }
 
   // on check si une touche du clavier a ete activee
   appuiClavier();
@@ -191,15 +216,15 @@ void serrureOuverte()
   if (uneFois)
   {
     uneFois = false;
-    
+
     // on allume les led verte
     neopixels->allLedOff();
-    for (int i=0;i<NB_LEDS;i++)
+    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
     {
       neopixels->setLed(i, CRGB::Green);
     }
     neopixels->ledShow();
-  }  
+  }
 
   // on check si une touche du clavier a ete activee
   appuiClavier();
@@ -209,18 +234,20 @@ void serrureBloquee()
 {
   if (!neopixels->isEnabled())
   {
-    refTime=millis();
-    neopixels->startAnimSerrureBloquee(10,500);
+    refTime = millis();    
+    neopixels->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
   }
-  
+
   if (neopixels->isLastIteration())
   {
     Serial.print(F("END TASK BLOCAGE : "));
-    Serial.print(millis()-refTime);
+    Serial.print(millis() - refTime);
     Serial.println();
-    statutSerrureActuel=statutSerrurePrecedent;
-    nbErreur=0;
-    
+    m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
+    m_config.myConfig.nbErreurCode = 0;
+
+    // ecrire la config sur littleFS
+    m_config.writeObjectConfig("/config/objectconfig.txt");
   }
 }
 
@@ -228,23 +255,26 @@ void serrureErreur()
 {
   if (!neopixels->isEnabled())
   {
-    neopixels->startAnimSerrureErreur(10,100);
+    neopixels->startAnimSerrureErreur(10, 100);
   }
-  
+
   if (neopixels->isLastIteration())
   {
     Serial.println(F("END TASK ERREUR"));
-    
+
     // si il y a eu trop de faux codes
-    if (nbErreur>=erreurCodeMax)
+    if (m_config.myConfig.nbErreurCode >= m_config.myConfig.nbErreurCodeMax)
     {
       // on bloque la serrure
-      statutSerrureActuel=SERRURE_BLOQUEE;
+      m_config.myConfig.statutSerrureActuel = SERRURE_BLOQUEE;
     }
     else
     {
-      statutSerrureActuel=statutSerrurePrecedent;
+      m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
     }
+
+    // ecrire la config sur littleFS
+    m_config.writeObjectConfig("/config/objectconfig.txt");
   }
 }
 
@@ -252,48 +282,59 @@ void appuiClavier()
 {
   // KEYPAD
   char customKey = aKeypad->getChar();
-  
+
   // une touche a ete pressee
   if (customKey != NO_KEY)
   {
-    Serial.println(customKey);
     buzzer->shortBeep();
 
     // la touche pressee n'est pas un #
-    if (customKey!='#')
+    if (customKey != '#')
     {
+      Serial.print(customKey);
+      
       // on met a jour codeSerrureActuel[] en decalant chaque caractere
-      codeSerrureActuel[0] = codeSerrureActuel[1];
-      codeSerrureActuel[1] = codeSerrureActuel[2];
-      codeSerrureActuel[2] = codeSerrureActuel[3];
-      codeSerrureActuel[3] = customKey;
+      for (int i = 0; i < m_config.myConfig.tailleCode - 1; i++)
+      {
+        codeSerrureActuel[i] = codeSerrureActuel[i + 1];
+        
+      }
+      codeSerrureActuel[m_config.myConfig.tailleCode - 1] = customKey;
     }
     else
-    // la touche pressee est un #
+      // la touche pressee est un #
     {
+      Serial.println();
+      Serial.println(customKey);      
+      
       // on compare codeSerrureActuel[] et codeSerrure[]
-      bool codeOK=true;
-      for (int i=0;i<4;i++)
+      Serial.println("actuel : attendu");
+      bool codeOK = true;
+      for (int i = 0; i < m_config.myConfig.tailleCode; i++)
       {
-         if (codeSerrureActuel[i] != codeSerrure[i])
-         {
+        if (codeSerrureActuel[i] != m_config.myConfig.codeSerrure[i])
+        {
           // ce caractere est faux, le code n'est pas bon
-          codeOK=false;
-         }
+          codeOK = false;          
+        }
+
+        Serial.print(codeSerrureActuel[i]);
+        Serial.print(" : ");
+        Serial.println(m_config.myConfig.codeSerrure[i]);
       }
 
       // le code est correct, on change le statut de la serrure
       if (codeOK)
       {
         buzzer->shortBeep();
-        
-        statutSerrureActuel=!statutSerrureActuel;
-        nbErreur=0;
-        
-        codeSerrureActuel[0] = 0;
-        codeSerrureActuel[1] = 0;
-        codeSerrureActuel[2] = 0;
-        codeSerrureActuel[3] = 0;
+
+        m_config.myConfig.statutSerrureActuel = !m_config.myConfig.statutSerrureActuel;
+        m_config.myConfig.nbErreurCode = 0;
+
+        for (int i = 0; i < m_config.myConfig.tailleCode; i++)
+        {
+          codeSerrureActuel[i] = '0';
+        }
       }
       // le code est incorrect
       else
@@ -302,15 +343,48 @@ void appuiClavier()
         buzzer->longBeep();
 
         // on augmente le compteur de code faux
-        nbErreur+=1;
+        m_config.myConfig.nbErreurCode += 1;
 
-        statutSerrurePrecedent=statutSerrureActuel;
-        
+        m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
+
         // on demarre l'anim faux code
-        statutSerrureActuel=SERRURE_ERREUR;        
+        m_config.myConfig.statutSerrureActuel = SERRURE_ERREUR;
       }
 
       uneFois = true;
+
+      // ecrire laconfig sur littleFS
+      m_config.writeObjectConfig("/config/objectconfig.txt");
+    }
+  }
+}
+
+void checkChangementParametres()
+{
+if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
+{
+  if (aKeypad->checkCombo('1','A',0))
+    {
+      Serial.println();
+      Serial.println("combo 1 A");
+    }
+  
+    if (aKeypad->checkCombo('4','B',1))
+    {
+      Serial.println();
+      Serial.println("combo 4 B");
+    }
+  
+    if (aKeypad->checkCombo('7','C',2))
+    {
+      Serial.println();
+      Serial.println("combo 7 C");
+    }
+  
+    if (aKeypad->checkCombo('*','D',3))
+    {
+      Serial.println();
+      Serial.println("combo * D");
     }
   }
 }
