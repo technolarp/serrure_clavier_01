@@ -57,11 +57,17 @@ int tempoBlocage = 5;
 enum {
   SERRURE_OUVERTE=0, 
   SERRURE_FERMEE=1,
-  SERRURE_BLOQUEE=2
+  SERRURE_BLOQUEE=2,
+  SERRURE_ERREUR=3
   };
 
 byte statutSerrureActuel=SERRURE_FERMEE;
 byte statutSerrurePrecedent=SERRURE_FERMEE;
+
+
+unsigned long int refTime = 0;
+
+bool uneFois = true;
 
 /*
  * ----------------------------------------------------------------------------
@@ -75,25 +81,28 @@ void setup()
   // LED RGB
   neopixels = new M_neopixel(&globalScheduler);
   
-  for (int i=0;i<8;i++)
+  // animation led de depart
+  for (int i=0;i<NB_LEDS*2;i++)
   {
-    neopixels->ledOn(i, CRGB::Blue);
+    neopixels->ledOn(i%NB_LEDS, CRGB::Blue);
     delay(50);
-    neopixels->ledOn(i, CRGB::Black);
+    neopixels->ledOn(i%NB_LEDS, CRGB::Black);
   }
+  neopixels->allLedOff();
 
   // KEYPAD
   aKeypad = new M_keypad();
 
+  aKeypad->checkReset();
+
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
+  buzzer->doubleBeep();
 
   // SERIAL
   Serial.println(F(""));
   Serial.println(F(""));
-  Serial.println(F("START !!!"));
-
-  buzzer->doubleBeep();
+  Serial.println(F("START !!!"));  
 }
 /*
  * ----------------------------------------------------------------------------
@@ -131,6 +140,11 @@ void loop()
       // la serrure est bloquee
       serrureBloquee();
       break;
+
+    case SERRURE_ERREUR:
+      // un code incorrect a ete entrer
+      serrureErreur();
+      break;
     
     default:
       // nothing
@@ -155,18 +169,18 @@ void loop()
 
  void serrureFermee()
 {
-  // on allume les led rouge, on eteint les led verte
-  for (int i=0;i<NB_LEDS;i++)
+  if (uneFois)
   {
-    if (i%2==0)
+    uneFois = false;
+
+    // on allume les led rouge
+    neopixels->allLedOff();
+    for (int i=0;i<NB_LEDS;i++)
     {
-      neopixels->ledOn(i, CRGB::Red);
+      neopixels->setLed(i, CRGB::Red);
     }
-    else
-    {
-      neopixels->ledOn(i, CRGB::Black);
-    }
-  }
+    neopixels->ledShow();
+  }  
 
   // on check si une touche du clavier a ete activee
   appuiClavier();
@@ -174,18 +188,18 @@ void loop()
 
 void serrureOuverte()
 {
-  // on eteint les led rouge, on allume les led verte
-  for (int i=0;i<NB_LEDS;i++)
+  if (uneFois)
   {
-    if (i%2==0)
+    uneFois = false;
+    
+    // on allume les led verte
+    neopixels->allLedOff();
+    for (int i=0;i<NB_LEDS;i++)
     {
-      neopixels->ledOn(i, CRGB::Black);
+      neopixels->setLed(i, CRGB::Green);
     }
-    else
-    {
-      neopixels->ledOn(i, CRGB::Green);
-    }
-  }
+    neopixels->ledShow();
+  }  
 
   // on check si une touche du clavier a ete activee
   appuiClavier();
@@ -195,13 +209,42 @@ void serrureBloquee()
 {
   if (!neopixels->isEnabled())
   {
-    neopixels->startAnimSerrureBloquee(5);
+    refTime=millis();
+    neopixels->startAnimSerrureBloquee(10,500);
   }
   
   if (neopixels->isLastIteration())
   {
-    Serial.println(F("END TASK"));
+    Serial.print(F("END TASK BLOCAGE : "));
+    Serial.print(millis()-refTime);
+    Serial.println();
     statutSerrureActuel=statutSerrurePrecedent;
+    nbErreur=0;
+    
+  }
+}
+
+void serrureErreur()
+{
+  if (!neopixels->isEnabled())
+  {
+    neopixels->startAnimSerrureErreur(10,100);
+  }
+  
+  if (neopixels->isLastIteration())
+  {
+    Serial.println(F("END TASK ERREUR"));
+    
+    // si il y a eu trop de faux codes
+    if (nbErreur>=erreurCodeMax)
+    {
+      // on bloque la serrure
+      statutSerrureActuel=SERRURE_BLOQUEE;
+    }
+    else
+    {
+      statutSerrureActuel=statutSerrurePrecedent;
+    }
   }
 }
 
@@ -241,7 +284,7 @@ void appuiClavier()
 
       // le code est correct, on change le statut de la serrure
       if (codeOK)
-      {        
+      {
         buzzer->shortBeep();
         
         statutSerrureActuel=!statutSerrureActuel;
@@ -261,17 +304,13 @@ void appuiClavier()
         // on augmente le compteur de code faux
         nbErreur+=1;
 
-        // on clignote la led rouge
-        neopixels->startAnimSerrureErreur(10);
-
-        // si il y a eu trop de faux codes
-        if (nbErreur>=erreurCodeMax)
-        {
-          // on bloque la serrure
-          statutSerrurePrecedent=statutSerrureActuel;
-          statutSerrureActuel=SERRURE_BLOQUEE;
-        }
+        statutSerrurePrecedent=statutSerrureActuel;
+        
+        // on demarre l'anim faux code
+        statutSerrureActuel=SERRURE_ERREUR;        
       }
+
+      uneFois = true;
     }
   }
 }
