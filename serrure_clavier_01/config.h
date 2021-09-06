@@ -15,7 +15,7 @@ class M_config
 	uint16_t groupId;
     
 	char objectName[SIZE_ARRAY];
-    char codeSerrure[MAX_SIZE_CODE];
+  char codeSerrure[MAX_SIZE_CODE];
 	
 	uint8_t activeLeds;
 	uint8_t tailleCode;
@@ -29,20 +29,16 @@ class M_config
   // creer une structure
   CONFIG_STRUCT myConfig;
   
-  // fichier config
-  //char configFile[30];
-
-  
   M_config()
   {
   }
   
   void mountFS()
   {
-    Serial.println("Mount LittleFS");
+    Serial.println(F("Mount LittleFS"));
     if (!LittleFS.begin()) 
     {
-      Serial.println("LittleFS mount failed");
+      Serial.println(F("LittleFS mount failed"));
       return;
     }
   }
@@ -53,7 +49,7 @@ class M_config
     File file = LittleFS.open(filename, "r");
     if (!file) 
     {
-      Serial.println("Failed to open file for reading");
+      Serial.println(F("Failed to open file for reading"));
     }
       
     StaticJsonDocument<1024> doc;
@@ -77,20 +73,23 @@ class M_config
   
   void listDir(const char * dirname)
   {
-    Serial.printf("Listing directory: %s\n", dirname);
+    Serial.printf("Listing directory: %s", dirname);
+    Serial.println();
   
     Dir root = LittleFS.openDir(dirname);
   
-    while (root.next()) 
-	{
+    while (root.next())
+	  {
       File file = root.openFile("r");
-      Serial.print("  FILE: ");
+      Serial.print(F("  FILE: "));
       Serial.print(root.fileName());
-      Serial.print("  SIZE: ");
+      Serial.print(F("  SIZE: "));
       Serial.print(file.size());
       Serial.println();
       file.close();
     }
+
+    Serial.println();
   }
   
   
@@ -101,12 +100,12 @@ class M_config
     File file = LittleFS.open(filename, "r");
     if (!file) 
     {
-      Serial.println("Failed to open file for reading");
+      Serial.println(F("Failed to open file for reading"));
       return;
     }
     else
     {
-      Serial.println("File opened");
+      Serial.println(F("File opened"));
     }
   
     StaticJsonDocument<1024> doc;

@@ -60,7 +60,6 @@ enum {
 };
 
 // DIVERS
-unsigned long int refTime = 0;
 bool uneFois = true;
 
 char bufferReconfig[8] = {'0','0','0','0','0','0','0','0'};
@@ -75,8 +74,17 @@ void setup()
 {
   Serial.begin(115200);
 
-  // CONFIG
+  // VERSION
   delay(500);
+  Serial.println(F(""));
+  Serial.println(F(""));
+  Serial.println(F("----------------------------------------------------------------------------"));
+  Serial.println(F("TECHNOLARP - https://technolarp.github.io/"));
+  Serial.println(F("SERRURE CLAVIER 01"));
+  Serial.println(F("version 1.0 - 09/2021"));
+  Serial.println(F("----------------------------------------------------------------------------"));
+  
+  // CONFIG
   Serial.println(F(""));
   Serial.println(F(""));
   m_config.mountFS();
@@ -117,7 +125,6 @@ void setup()
     Serial.println(F(""));
     m_config.writeDefaultObjectConfig("/config/objectconfig.txt");
     m_config.printJsonFile("/config/objectconfig.txt");
-    //m_config.readObjectConfig("/config/objectconfig.txt");
 
     delay(1000);
   }
@@ -282,15 +289,13 @@ void serrureBloquee()
   if (!neopixels->isEnabled() && uneFois)
   {
     uneFois = false;
-    refTime = millis();
     neopixels->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
   }
 
   //if (neopixels->isLastIteration())
   if (!neopixels->isAnimActive())
   {
-    Serial.print(F("END TASK BLOCAGE : "));
-    Serial.print(millis() - refTime);
+    Serial.print(F("END TASK BLOCAGE "));
     Serial.println();
     m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
     m_config.myConfig.nbErreurCode = 0;
