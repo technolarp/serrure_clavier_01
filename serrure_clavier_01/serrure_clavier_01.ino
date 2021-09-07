@@ -1,24 +1,27 @@
 /*
    ----------------------------------------------------------------------------
-   For this exemple you will need
-   1 4*4 matrix keypad and 1 i2c PCF8574 board
-   1 neopixel ring
-   1 piezo buzzer
+   TECHNOLARP - https://technolarp.github.io/
+   SERRURE CLAVIER 01 - https://github.com/technolarp/serrure_clavier_01
+   version 1.0 - 09/2021
+   ----------------------------------------------------------------------------
+*/
+
+/*
+   ----------------------------------------------------------------------------
+   Pour ce montage, vous avez besoin de 
+   1 clavier matricel 4*4 
+   1 carte PCF8574 I2C
+   1 ou + led neopixel
+   1 buzzer piezo
    ----------------------------------------------------------------------------
 */
 
 /*
    ----------------------------------------------------------------------------
    PINOUT
-   A0     PHOTORESISTOR + pulldown / POTENTIOMETER
    D0     NEOPIXEL
-   D1     I2C SCL
-   D2     I2C SDA
-   D3     TM1637 DIO
-   D4     BUILTIN LED
-   D5     TM1637 CLK
-   D6     ROTARY_CLK
-   D7     ROTARY_DT
+   D1     I2C SCL => SCL PCF8574
+   D2     I2C SDA => SDA PCF8574
    D8     BUZZER
    ----------------------------------------------------------------------------
 */
@@ -65,6 +68,8 @@ bool uneFois = true;
 char bufferReconfig[8] = {'0','0','0','0','0','0','0','0'};
 uint8_t modeReconfig = 0;
 
+
+
 /*
    ----------------------------------------------------------------------------
    SETUP
@@ -80,7 +85,7 @@ void setup()
   Serial.println(F(""));
   Serial.println(F("----------------------------------------------------------------------------"));
   Serial.println(F("TECHNOLARP - https://technolarp.github.io/"));
-  Serial.println(F("SERRURE CLAVIER 01"));
+  Serial.println(F("SERRURE CLAVIER 01 - https://github.com/technolarp/serrure_clavier_01"));
   Serial.println(F("version 1.0 - 09/2021"));
   Serial.println(F("----------------------------------------------------------------------------"));
   
@@ -261,7 +266,6 @@ void serrureErreur()
     neopixels->startAnimSerrureErreur(10, 100);
   }
 
-  //if (neopixels->isLastIteration())
   if (!neopixels->isAnimActive())
   {
     Serial.println(F("END TASK ERREUR"));
@@ -292,7 +296,6 @@ void serrureBloquee()
     neopixels->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
   }
 
-  //if (neopixels->isLastIteration())
   if (!neopixels->isAnimActive())
   {
     Serial.print(F("END TASK BLOCAGE "));
@@ -544,7 +547,7 @@ void checkChangementParametres()
 {
 if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 {
-  if (aKeypad->checkCombo('1','A',0))
+    if (aKeypad->checkCombo('1','A',0))
     {
       Serial.println();
       Serial.println(F("combo 1 A - changement de code"));
