@@ -104,6 +104,7 @@ void setup()
   neopixels->setNbLed(m_config.myConfig.activeLeds);
 
   // animation led de depart
+  /*
   neopixels->allLedOff();
   for (int i = 0; i < m_config.myConfig.activeLeds * 2; i++)
   {
@@ -112,11 +113,14 @@ void setup()
     neopixels->ledOn(i % m_config.myConfig.activeLeds, CRGB::Black);
   }
   neopixels->allLedOff();
+  */
 
   // KEYPAD
   aKeypad = new M_keypad();
 
   // CHECK RESET CONFIG
+  
+  /*
   if (aKeypad->checkReset())
   {
     for (int i = 0; i < m_config.myConfig.activeLeds; i++)
@@ -133,6 +137,8 @@ void setup()
 
     delay(1000);
   }
+  */
+  
 
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
