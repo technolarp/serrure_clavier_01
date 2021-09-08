@@ -34,11 +34,11 @@
 Scheduler globalScheduler;
 
 // LED RGB
-#include <technolarp_neopixel.h>
-M_neopixel* neopixels;
+#include <technolarp_fastled.h>
+M_fastled* aFastled;
 
 // KEYPAD
-#include "technolarp_keypad.h"
+#include <technolarp_keypad.h>
 M_keypad* aKeypad;
 
 // BUZZER
@@ -60,6 +60,14 @@ enum {
   SERRURE_BLOQUEE = 2,
   SERRURE_ERREUR = 3,
   SERRURE_RECONFIG = 4
+};
+
+// PARAM RECONFIG
+enum {
+  RECONFIG_CODE = 0,
+  RECONFIG_ERREUR = 1,
+  RECONFIG_DELAI = 2,
+  RECONFIG_TAILLE_CODE = 3
 };
 
 // DIVERS
@@ -89,7 +97,7 @@ void setup()
   Serial.println(F("version 1.0 - 09/2021"));
   Serial.println(F("----------------------------------------------------------------------------"));
   
-  // CONFIG
+  // CONFIG OBJET
   Serial.println(F(""));
   Serial.println(F(""));
   m_config.mountFS();
@@ -100,34 +108,33 @@ void setup()
 
 
   // LED RGB
-  neopixels = new M_neopixel(&globalScheduler);
-  neopixels->setNbLed(m_config.myConfig.activeLeds);
+  aFastled = new M_fastled(&globalScheduler);
+  aFastled->setNbLed(m_config.myConfig.activeLeds);
 
   // animation led de depart
-  /*
-  neopixels->allLedOff();
+  
+  aFastled->allLedOff();
   for (int i = 0; i < m_config.myConfig.activeLeds * 2; i++)
   {
-    neopixels->ledOn(i % m_config.myConfig.activeLeds, CRGB::Blue);
+    aFastled->ledOn(i % m_config.myConfig.activeLeds, CRGB::Blue);
     delay(50);
-    neopixels->ledOn(i % m_config.myConfig.activeLeds, CRGB::Black);
+    aFastled->ledOn(i % m_config.myConfig.activeLeds, CRGB::Black);
   }
-  neopixels->allLedOff();
-  */
+  aFastled->allLedOff();
+  
 
   // KEYPAD
   aKeypad = new M_keypad();
 
   // CHECK RESET CONFIG
   
-  /*
   if (aKeypad->checkReset())
   {
     for (int i = 0; i < m_config.myConfig.activeLeds; i++)
     {
-      neopixels->setLed(i, CRGB::Yellow);
+      aFastled->setLed(i, CRGB::Yellow);
     }
-    neopixels->ledShow();
+    aFastled->ledShow();
     
     Serial.println(F(""));
     Serial.println(F("!!! RESET CONFIG !!!"));
@@ -136,9 +143,7 @@ void setup()
     m_config.printJsonFile("/config/objectconfig.txt");
 
     delay(1000);
-  }
-  */
-  
+  }  
 
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
@@ -227,12 +232,12 @@ void serrureFermee()
     uneFois = false;
 
     // on allume les led rouge
-    neopixels->allLedOff();
+    aFastled->allLedOff();
     for (int i = 0; i < m_config.myConfig.activeLeds; i++)
     {
-      neopixels->setLed(i, CRGB::Red);
+      aFastled->setLed(i, CRGB::Red);
     }
-    neopixels->ledShow();
+    aFastled->ledShow();
 
     Serial.print(F("SERRURE FERMEE"));
     Serial.println();
@@ -249,12 +254,12 @@ void serrureOuverte()
     uneFois = false;
 
     // on allume les led verte
-    neopixels->allLedOff();
+    aFastled->allLedOff();
     for (int i = 0; i < m_config.myConfig.activeLeds; i++)
     {
-      neopixels->setLed(i, CRGB::Green);
+      aFastled->setLed(i, CRGB::Green);
     }
-    neopixels->ledShow();
+    aFastled->ledShow();
 
     Serial.print(F("SERRURE OUVERTE"));
     Serial.println();
@@ -266,13 +271,13 @@ void serrureOuverte()
 
 void serrureErreur()
 {
-  if (!neopixels->isEnabled() && uneFois)
+  if (!aFastled->isEnabled() && uneFois)
   {
     uneFois = false;
-    neopixels->startAnimSerrureErreur(10, 100);
+    aFastled->startAnimSerrureErreur(10, 100);
   }
 
-  if (!neopixels->isAnimActive())
+  if (!aFastled->isAnimActive())
   {
     Serial.println(F("END TASK ERREUR"));
 
@@ -296,13 +301,13 @@ void serrureErreur()
 
 void serrureBloquee()
 {
-  if (!neopixels->isEnabled() && uneFois)
+  if (!aFastled->isEnabled() && uneFois)
   {
     uneFois = false;
-    neopixels->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
+    aFastled->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
   }
 
-  if (!neopixels->isAnimActive())
+  if (!aFastled->isAnimActive())
   {
     Serial.print(F("END TASK BLOCAGE "));
     Serial.println();
@@ -318,29 +323,29 @@ void serrureBloquee()
 
 void serrureReconfig()
 {
-  if (!neopixels->isEnabled() && uneFois)
+  if (!aFastled->isEnabled() && uneFois)
   {
     uneFois = false;
     
-    if (!aKeypad->getUneFoisFlag(0))
+    if (!aKeypad->getUneFoisFlag(RECONFIG_CODE))
     {
-      neopixels->startAnimSerpent(0, 50, 50, CRGB::Blue);
-      modeReconfig = 0;
+      aFastled->startAnimSerpent(0, 50, 50, CRGB::Blue);
+      modeReconfig = RECONFIG_CODE;
     }
-    else if (!aKeypad->getUneFoisFlag(1))
+    else if (!aKeypad->getUneFoisFlag(RECONFIG_ERREUR))
     {
-      neopixels->startAnimSerpent(0, 50, 50, CRGB::Yellow);
-      modeReconfig = 1;
+      aFastled->startAnimSerpent(0, 50, 50, CRGB::Yellow);
+      modeReconfig = RECONFIG_ERREUR;
     }
-    else if (!aKeypad->getUneFoisFlag(2))
+    else if (!aKeypad->getUneFoisFlag(RECONFIG_DELAI))
     {
-      neopixels->startAnimSerpent(0, 50, 50, CRGB::Cyan);
-      modeReconfig = 2;
+      aFastled->startAnimSerpent(0, 50, 50, CRGB::Cyan);
+      modeReconfig = RECONFIG_DELAI;
     }
-    else if (!aKeypad->getUneFoisFlag(3))
+    else if (!aKeypad->getUneFoisFlag(RECONFIG_TAILLE_CODE))
     {
-      neopixels->startAnimSerpent(0, 50, 50, CRGB::Purple);
-      modeReconfig = 3;
+      aFastled->startAnimSerpent(0, 50, 50, CRGB::Purple);
+      modeReconfig = RECONFIG_TAILLE_CODE;
     }
 
     for (int i = 0; i < 8; i++)
@@ -372,7 +377,7 @@ void serrureReconfig()
     {
       Serial.println(F("validation"));
       
-      if (modeReconfig == 0)
+      if (modeReconfig == RECONFIG_CODE)
       // modification du code de la serrure
       {
         Serial.print(F("NOUVEAU CODE :"));
@@ -383,7 +388,7 @@ void serrureReconfig()
         }
         Serial.println(F(""));
       }
-      else if (modeReconfig == 1)
+      else if (modeReconfig == RECONFIG_ERREUR)
       // modification du nombre max d erreur de code
       {
         // taille min=1, taille max=9
@@ -401,7 +406,7 @@ void serrureReconfig()
         Serial.print(F("NOUVEAU NB MAX ERREUR : "));
         Serial.println(m_config.myConfig.nbErreurCodeMax);
       }
-      else if (modeReconfig == 2)
+      else if (modeReconfig == RECONFIG_DELAI)
       // modification du delai de blocage
       {
         uint16_t nouveauDelai=0;
@@ -426,7 +431,7 @@ void serrureReconfig()
         Serial.print(m_config.myConfig.intervalBlocage);
         Serial.println(F(" SECONDES"));
       }
-      else if (modeReconfig == 3)
+      else if (modeReconfig == RECONFIG_TAILLE_CODE)
       // modification de la taille du code
       {
         // taille min=1, taille max=8
@@ -451,12 +456,12 @@ void serrureReconfig()
       }
 
       // stop la reconfig
-      neopixels->disable();
+      aFastled->disable();
     }
   }
 
   // Check fin de la reconfig
-  if (!neopixels->isAnimActive())
+  if (!aFastled->isAnimActive())
   {
     Serial.print(F("END TASK RECONFIG"));
     Serial.println();
@@ -553,7 +558,7 @@ void checkChangementParametres()
 {
 if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 {
-    if (aKeypad->checkCombo('1','A',0))
+    if (aKeypad->checkCombo('1','A',RECONFIG_CODE))
     {
       Serial.println();
       Serial.println(F("combo 1 A - changement de code"));
@@ -564,7 +569,7 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
       m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
-    if (aKeypad->checkCombo('4','B',1))
+    if (aKeypad->checkCombo('4','B',RECONFIG_ERREUR))
     {
       Serial.println();
       Serial.println(F("combo 4 B - changement du nombre max d erreur"));
@@ -575,7 +580,7 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
       m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
-    if (aKeypad->checkCombo('7','C',2))
+    if (aKeypad->checkCombo('7','C',RECONFIG_DELAI))
     {
       Serial.println();
       Serial.println(F("combo 7 C - changement du delai de blocage"));
@@ -586,7 +591,7 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
       m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
-    if (aKeypad->checkCombo('*','D',3))
+    if (aKeypad->checkCombo('*','D',RECONFIG_TAILLE_CODE))
     {
       Serial.println();
       Serial.println(F("combo * D - changement de la taille du code"));
