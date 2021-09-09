@@ -9,25 +9,25 @@ class M_config
 {
   public:
   // structure stockage
-  struct CONFIG_STRUCT
+  struct OBJECT_CONFIG_STRUCT
   {
     uint16_t objectId;
-	uint16_t groupId;
-    
-	char objectName[SIZE_ARRAY];
-  char codeSerrure[MAX_SIZE_CODE];
-	
-	uint8_t activeLeds;
-	uint8_t tailleCode;
-	uint8_t nbErreurCodeMax;
-	uint8_t nbErreurCode;
-	uint16_t intervalBlocage;
-	uint8_t statutSerrureActuel;
-	uint8_t statutSerrurePrecedent;
+  	uint16_t groupId;
+      
+  	char objectName[SIZE_ARRAY];
+    char codeSerrure[MAX_SIZE_CODE];
+  	
+  	uint8_t activeLeds;
+  	uint8_t tailleCode;
+  	uint8_t nbErreurCodeMax;
+  	uint8_t nbErreurCode;
+  	uint16_t intervalBlocage;
+  	uint8_t statutSerrureActuel;
+  	uint8_t statutSerrurePrecedent;
   };
   
   // creer une structure
-  CONFIG_STRUCT myConfig;
+  OBJECT_CONFIG_STRUCT objectConfig;
   
   M_config()
   {
@@ -36,7 +36,7 @@ class M_config
   void mountFS()
   {
     Serial.println(F("Mount LittleFS"));
-    if (!LittleFS.begin()) 
+    if (!LittleFS.begin())
     {
       Serial.println(F("LittleFS mount failed"));
       return;
@@ -120,28 +120,28 @@ class M_config
     else
     {
 		// Copy values from the JsonObject to the Config
-		myConfig.objectId = doc["objectId"];
-		myConfig.groupId = doc["groupId"];
-		myConfig.activeLeds = doc["activeLeds"];
-		myConfig.tailleCode = doc["tailleCode"];
-		myConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
-		myConfig.nbErreurCode = doc["nbErreurCode"];
-		myConfig.intervalBlocage = doc["intervalBlocage"];
-		myConfig.statutSerrureActuel = doc["statutSerrureActuel"];
-		myConfig.statutSerrurePrecedent = doc["statutSerrurePrecedent"];
+		objectConfig.objectId = doc["objectId"];
+		objectConfig.groupId = doc["groupId"];
+		objectConfig.activeLeds = doc["activeLeds"];
+		objectConfig.tailleCode = doc["tailleCode"];
+		objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
+		objectConfig.nbErreurCode = doc["nbErreurCode"];
+		objectConfig.intervalBlocage = doc["intervalBlocage"];
+		objectConfig.statutSerrureActuel = doc["statutSerrureActuel"];
+		objectConfig.statutSerrurePrecedent = doc["statutSerrurePrecedent"];
   		
   		if (doc.containsKey("objectName"))
   		{ 
-  			strlcpy(  myConfig.objectName,
+  			strlcpy(  objectConfig.objectName,
   			          doc["objectName"],
-  			          sizeof(myConfig.objectName));
+  			          sizeof(objectConfig.objectName));
   		}
   		
   		if (doc.containsKey("codeSerrure"))
   		{ 
-  			strlcpy(  myConfig.codeSerrure,
+  			strlcpy(  objectConfig.codeSerrure,
   			          doc["codeSerrure"],
-  			          sizeof(myConfig.codeSerrure));
+  			          sizeof(objectConfig.codeSerrure));
   		}
     }
   		
@@ -165,27 +165,27 @@ class M_config
     // Allocate a temporary JsonDocument
     StaticJsonDocument<1024> doc;
 
-    doc["objectId"] = myConfig.objectId;
-    doc["groupId"] = myConfig.groupId;
-    doc["activeLeds"] = myConfig.activeLeds;
-    doc["tailleCode"] = myConfig.tailleCode;
-    doc["nbErreurCodeMax"] = myConfig.nbErreurCodeMax;
-    doc["nbErreurCode"] = myConfig.nbErreurCode;
-    doc["intervalBlocage"] = myConfig.intervalBlocage;
-    doc["statutSerrureActuel"] = myConfig.statutSerrureActuel;
-    doc["statutSerrurePrecedent"] = myConfig.statutSerrurePrecedent;
+    doc["objectId"] = objectConfig.objectId;
+    doc["groupId"] = objectConfig.groupId;
+    doc["activeLeds"] = objectConfig.activeLeds;
+    doc["tailleCode"] = objectConfig.tailleCode;
+    doc["nbErreurCodeMax"] = objectConfig.nbErreurCodeMax;
+    doc["nbErreurCode"] = objectConfig.nbErreurCode;
+    doc["intervalBlocage"] = objectConfig.intervalBlocage;
+    doc["statutSerrureActuel"] = objectConfig.statutSerrureActuel;
+    doc["statutSerrurePrecedent"] = objectConfig.statutSerrurePrecedent;
     
     String newObjectName="";
     String newcodeSerrure="";
     
     for (int i=0;i<SIZE_ARRAY;i++)
     {
-      newObjectName+= myConfig.objectName[i];
+      newObjectName+= objectConfig.objectName[i];
     }
 	
 	for (int i=0;i<MAX_SIZE_CODE;i++)
     {
-      newcodeSerrure+= myConfig.codeSerrure[i];
+      newcodeSerrure+= objectConfig.codeSerrure[i];
     }	
     
     doc["objectName"] = newObjectName;
@@ -204,21 +204,21 @@ class M_config
   
   void writeDefaultObjectConfig(const char * filename)
   {
-	myConfig.objectId = 1;
-	myConfig.groupId = 1;
-	myConfig.activeLeds = 8;
-	myConfig.tailleCode = 4;
-	myConfig.nbErreurCodeMax = 3;
-	myConfig.nbErreurCode = 0;
-	myConfig.intervalBlocage = 10;
-	myConfig.statutSerrureActuel = 1;
-	myConfig.statutSerrurePrecedent = 1;
+	objectConfig.objectId = 1;
+	objectConfig.groupId = 1;
+	objectConfig.activeLeds = 8;
+	objectConfig.tailleCode = 4;
+	objectConfig.nbErreurCodeMax = 3;
+	objectConfig.nbErreurCode = 0;
+	objectConfig.intervalBlocage = 10;
+	objectConfig.statutSerrureActuel = 1;
+	objectConfig.statutSerrurePrecedent = 1;
 	
-	strlcpy(  myConfig.objectName,
+	strlcpy(  objectConfig.objectName,
   			          "serrure",
   			          sizeof("serrure"));
 	
-	strlcpy(  myConfig.codeSerrure,
+	strlcpy(  objectConfig.codeSerrure,
   			          "12345678",
   			          sizeof("12345678"));	
 		

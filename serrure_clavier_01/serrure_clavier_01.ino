@@ -48,7 +48,7 @@ M_buzzer* buzzer;
 
 // CONFIG
 #include "config.h"
-M_config m_config;
+M_config aConfig;
 
 // CODE ACTUEL DE LA SERRURE
 char codeSerrureActuel[8] = {'0', '0', '0', '0', '0', '0', '0', '0'};
@@ -100,25 +100,25 @@ void setup()
   // CONFIG OBJET
   Serial.println(F(""));
   Serial.println(F(""));
-  m_config.mountFS();
-  m_config.listDir("/");
-  m_config.listDir("/config");
-  m_config.printJsonFile("/config/objectconfig.txt");
-  m_config.readObjectConfig("/config/objectconfig.txt");
+  aConfig.mountFS();
+  aConfig.listDir("/");
+  aConfig.listDir("/config");
+  aConfig.printJsonFile("/config/objectconfig.txt");
+  aConfig.readObjectConfig("/config/objectconfig.txt");
 
 
   // LED RGB
   aFastled = new M_fastled(&globalScheduler);
-  aFastled->setNbLed(m_config.myConfig.activeLeds);
+  aFastled->setNbLed(aConfig.objectConfig.activeLeds);
 
   // animation led de depart
   
   aFastled->allLedOff();
-  for (int i = 0; i < m_config.myConfig.activeLeds * 2; i++)
+  for (int i = 0; i < aConfig.objectConfig.activeLeds * 2; i++)
   {
-    aFastled->ledOn(i % m_config.myConfig.activeLeds, CRGB::Blue);
+    aFastled->ledOn(i % aConfig.objectConfig.activeLeds, CRGB::Blue);
     delay(50);
-    aFastled->ledOn(i % m_config.myConfig.activeLeds, CRGB::Black);
+    aFastled->ledOn(i % aConfig.objectConfig.activeLeds, CRGB::Black);
   }
   aFastled->allLedOff();
   
@@ -130,7 +130,7 @@ void setup()
   
   if (aKeypad->checkReset())
   {
-    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
+    for (int i = 0; i < aConfig.objectConfig.activeLeds; i++)
     {
       aFastled->setLed(i, CRGB::Yellow);
     }
@@ -139,8 +139,8 @@ void setup()
     Serial.println(F(""));
     Serial.println(F("!!! RESET CONFIG !!!"));
     Serial.println(F(""));
-    m_config.writeDefaultObjectConfig("/config/objectconfig.txt");
-    m_config.printJsonFile("/config/objectconfig.txt");
+    aConfig.writeDefaultObjectConfig("/config/objectconfig.txt");
+    aConfig.printJsonFile("/config/objectconfig.txt");
 
     delay(1000);
   }  
@@ -170,11 +170,13 @@ void setup()
 */
 void loop()
 {
+  //yield();
+  
   // manage task scheduler
   globalScheduler.execute();
 
   // gerer le statut de la serrure
-  switch (m_config.myConfig.statutSerrureActuel)
+  switch (aConfig.objectConfig.statutSerrureActuel)
   {
     case SERRURE_FERMEE:
       // la serrure est fermee
@@ -233,7 +235,7 @@ void serrureFermee()
 
     // on allume les led rouge
     aFastled->allLedOff();
-    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
+    for (int i = 0; i < aConfig.objectConfig.activeLeds; i++)
     {
       aFastled->setLed(i, CRGB::Red);
     }
@@ -255,7 +257,7 @@ void serrureOuverte()
 
     // on allume les led verte
     aFastled->allLedOff();
-    for (int i = 0; i < m_config.myConfig.activeLeds; i++)
+    for (int i = 0; i < aConfig.objectConfig.activeLeds; i++)
     {
       aFastled->setLed(i, CRGB::Green);
     }
@@ -284,18 +286,18 @@ void serrureErreur()
     uneFois = true;
 
     // si il y a eu trop de faux codes
-    if (m_config.myConfig.nbErreurCode >= m_config.myConfig.nbErreurCodeMax)
+    if (aConfig.objectConfig.nbErreurCode >= aConfig.objectConfig.nbErreurCodeMax)
     {
       // on bloque la serrure
-      m_config.myConfig.statutSerrureActuel = SERRURE_BLOQUEE;
+      aConfig.objectConfig.statutSerrureActuel = SERRURE_BLOQUEE;
     }
     else
     {
-      m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
+      aConfig.objectConfig.statutSerrureActuel = aConfig.objectConfig.statutSerrurePrecedent;
     }
 
     // ecrire la config sur littleFS
-    m_config.writeObjectConfig("/config/objectconfig.txt");
+    aConfig.writeObjectConfig("/config/objectconfig.txt");
   }
 }
 
@@ -304,20 +306,20 @@ void serrureBloquee()
   if (!aFastled->isEnabled() && uneFois)
   {
     uneFois = false;
-    aFastled->startAnimSerrureBloquee(m_config.myConfig.intervalBlocage*2, 500);
+    aFastled->startAnimSerrureBloquee(aConfig.objectConfig.intervalBlocage*2, 500);
   }
 
   if (!aFastled->isAnimActive())
   {
     Serial.print(F("END TASK BLOCAGE "));
     Serial.println();
-    m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
-    m_config.myConfig.nbErreurCode = 0;
+    aConfig.objectConfig.statutSerrureActuel = aConfig.objectConfig.statutSerrurePrecedent;
+    aConfig.objectConfig.nbErreurCode = 0;
 
     uneFois = true;
 
     // ecrire la config sur littleFS
-    m_config.writeObjectConfig("/config/objectconfig.txt");
+    aConfig.writeObjectConfig("/config/objectconfig.txt");
   }
 }
 
@@ -381,10 +383,10 @@ void serrureReconfig()
       // modification du code de la serrure
       {
         Serial.print(F("NOUVEAU CODE :"));
-        for (int i = 0; i < m_config.myConfig.tailleCode; i++)
+        for (int i = 0; i < aConfig.objectConfig.tailleCode; i++)
         {
-          m_config.myConfig.codeSerrure[i] = bufferReconfig[i+8-m_config.myConfig.tailleCode];
-          Serial.print(m_config.myConfig.codeSerrure[i]);
+          aConfig.objectConfig.codeSerrure[i] = bufferReconfig[i+8-aConfig.objectConfig.tailleCode];
+          Serial.print(aConfig.objectConfig.codeSerrure[i]);
         }
         Serial.println(F(""));
       }
@@ -395,16 +397,16 @@ void serrureReconfig()
         // ascii code, 1=49, 9=57        
         if (bufferReconfig[7]>=49 && bufferReconfig[7]<=57)
         {
-          m_config.myConfig.nbErreurCodeMax=bufferReconfig[7]-48;          
+          aConfig.objectConfig.nbErreurCodeMax=bufferReconfig[7]-48;          
         }
         else
         {
           // valeur par defaut
-          m_config.myConfig.nbErreurCodeMax=3;
+          aConfig.objectConfig.nbErreurCodeMax=3;
         }
 
         Serial.print(F("NOUVEAU NB MAX ERREUR : "));
-        Serial.println(m_config.myConfig.nbErreurCodeMax);
+        Serial.println(aConfig.objectConfig.nbErreurCodeMax);
       }
       else if (modeReconfig == RECONFIG_DELAI)
       // modification du delai de blocage
@@ -425,10 +427,10 @@ void serrureReconfig()
         nouveauDelai=max<int>(nouveauDelai,1);
         nouveauDelai=min<int>(nouveauDelai,300);
 
-        m_config.myConfig.intervalBlocage=nouveauDelai;
+        aConfig.objectConfig.intervalBlocage=nouveauDelai;
 
         Serial.print(F("NOUVEAU DELAI BLOCAGE : "));
-        Serial.print(m_config.myConfig.intervalBlocage);
+        Serial.print(aConfig.objectConfig.intervalBlocage);
         Serial.println(F(" SECONDES"));
       }
       else if (modeReconfig == RECONFIG_TAILLE_CODE)
@@ -438,12 +440,12 @@ void serrureReconfig()
         // ascii code, 1=49, 8=56        
         if (bufferReconfig[7]>=49 && bufferReconfig[7]<=56)
         {
-          m_config.myConfig.tailleCode=bufferReconfig[7]-48;          
+          aConfig.objectConfig.tailleCode=bufferReconfig[7]-48;          
         }
         else
         {
           // valeur par defaut
-          m_config.myConfig.tailleCode=4;
+          aConfig.objectConfig.tailleCode=4;
         }
 
         for (int i=0;i<8;i++)
@@ -452,7 +454,7 @@ void serrureReconfig()
         }
 
         Serial.print(F("NOUVELLE TAILLE CODE : "));
-        Serial.println(m_config.myConfig.tailleCode);
+        Serial.println(aConfig.objectConfig.tailleCode);
       }
 
       // stop la reconfig
@@ -465,12 +467,12 @@ void serrureReconfig()
   {
     Serial.print(F("END TASK RECONFIG"));
     Serial.println();
-    m_config.myConfig.statutSerrureActuel = m_config.myConfig.statutSerrurePrecedent;
+    aConfig.objectConfig.statutSerrureActuel = aConfig.objectConfig.statutSerrurePrecedent;
     uneFois = true;
 
     // ecrire la config sur littleFS
-    m_config.writeObjectConfig("/config/objectconfig.txt");
-    m_config.printJsonFile("/config/objectconfig.txt");
+    aConfig.writeObjectConfig("/config/objectconfig.txt");
+    aConfig.printJsonFile("/config/objectconfig.txt");
   }
 }
 
@@ -490,11 +492,11 @@ void appuiClavier()
       Serial.print(customKey);
 
       // on met a jour codeSerrureActuel[] en decalant chaque caractere
-      for (int i = 0; i < m_config.myConfig.tailleCode - 1; i++)
+      for (int i = 0; i < aConfig.objectConfig.tailleCode - 1; i++)
       {
         codeSerrureActuel[i] = codeSerrureActuel[i + 1];        
       }
-      codeSerrureActuel[m_config.myConfig.tailleCode - 1] = customKey;
+      codeSerrureActuel[aConfig.objectConfig.tailleCode - 1] = customKey;
     }
     else
       // la touche pressee est un #
@@ -505,9 +507,9 @@ void appuiClavier()
       // on compare codeSerrureActuel[] et codeSerrure[]
       Serial.println(F("actuel : attendu"));
       bool codeOK = true;
-      for (int i = 0; i < m_config.myConfig.tailleCode; i++)
+      for (int i = 0; i < aConfig.objectConfig.tailleCode; i++)
       {
-        if (codeSerrureActuel[i] != m_config.myConfig.codeSerrure[i])
+        if (codeSerrureActuel[i] != aConfig.objectConfig.codeSerrure[i])
         {
           // ce caractere est faux, le code n'est pas bon
           codeOK = false;          
@@ -515,7 +517,7 @@ void appuiClavier()
 
         Serial.print(codeSerrureActuel[i]);
         Serial.print(" : ");
-        Serial.println(m_config.myConfig.codeSerrure[i]);
+        Serial.println(aConfig.objectConfig.codeSerrure[i]);
       }
 
       // le code est correct, on change le statut de la serrure
@@ -523,10 +525,10 @@ void appuiClavier()
       {
         buzzer->shortBeep();
 
-        m_config.myConfig.statutSerrureActuel = !m_config.myConfig.statutSerrureActuel;
-        m_config.myConfig.nbErreurCode = 0;
+        aConfig.objectConfig.statutSerrureActuel = !aConfig.objectConfig.statutSerrureActuel;
+        aConfig.objectConfig.nbErreurCode = 0;
 
-        for (int i = 0; i < m_config.myConfig.tailleCode; i++)
+        for (int i = 0; i < aConfig.objectConfig.tailleCode; i++)
         {
           codeSerrureActuel[i] = '0';
         }
@@ -538,25 +540,25 @@ void appuiClavier()
         buzzer->longBeep();
 
         // on augmente le compteur de code faux
-        m_config.myConfig.nbErreurCode += 1;
+        aConfig.objectConfig.nbErreurCode += 1;
 
-        m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
+        aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
 
         // on demarre l'anim faux code
-        m_config.myConfig.statutSerrureActuel = SERRURE_ERREUR;
+        aConfig.objectConfig.statutSerrureActuel = SERRURE_ERREUR;
       }
 
       uneFois = true;
 
       // ecrire la config sur littleFS
-      m_config.writeObjectConfig("/config/objectconfig.txt");
+      aConfig.writeObjectConfig("/config/objectconfig.txt");
     }
   }
 }
 
 void checkChangementParametres()
 {
-if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
+if (aConfig.objectConfig.statutSerrureActuel == SERRURE_OUVERTE)
 {
     if (aKeypad->checkCombo('1','A',RECONFIG_CODE))
     {
@@ -565,8 +567,8 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 
       uneFois = true;
 
-      m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
-      m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
+      aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
+      aConfig.objectConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
     if (aKeypad->checkCombo('4','B',RECONFIG_ERREUR))
@@ -576,8 +578,8 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 
       uneFois = true;
 
-      m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
-      m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
+      aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
+      aConfig.objectConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
     if (aKeypad->checkCombo('7','C',RECONFIG_DELAI))
@@ -587,8 +589,8 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 
       uneFois = true;
 
-      m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
-      m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
+      aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
+      aConfig.objectConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   
     if (aKeypad->checkCombo('*','D',RECONFIG_TAILLE_CODE))
@@ -598,8 +600,8 @@ if (m_config.myConfig.statutSerrureActuel == SERRURE_OUVERTE)
 
       uneFois = true;
 
-      m_config.myConfig.statutSerrurePrecedent = m_config.myConfig.statutSerrureActuel;
-      m_config.myConfig.statutSerrureActuel = SERRURE_RECONFIG;
+      aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
+      aConfig.objectConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   }
 }
