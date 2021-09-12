@@ -5,6 +5,8 @@
 #define SIZE_ARRAY 20
 #define MAX_SIZE_CODE 9
 
+#include <IPAddress.h>
+
 class M_config
 {
   public:
@@ -28,6 +30,18 @@ class M_config
   
   // creer une structure
   OBJECT_CONFIG_STRUCT objectConfig;
+
+  struct NETWORK_CONFIG_STRUCT
+  {
+    IPAddress apIP;
+    IPAddress apNetMsk;
+    char apName[SIZE_ARRAY];
+    char apPassword[SIZE_ARRAY];
+  };
+  
+  // creer une structure
+  NETWORK_CONFIG_STRUCT networkConfig;
+  
   
   M_config()
   {
@@ -119,17 +133,17 @@ class M_config
     }
     else
     {
-		// Copy values from the JsonObject to the Config
-		objectConfig.objectId = doc["objectId"];
-		objectConfig.groupId = doc["groupId"];
-		objectConfig.activeLeds = doc["activeLeds"];
-		objectConfig.tailleCode = doc["tailleCode"];
-		objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
-		objectConfig.nbErreurCode = doc["nbErreurCode"];
-		objectConfig.intervalBlocage = doc["intervalBlocage"];
-		objectConfig.statutSerrureActuel = doc["statutSerrureActuel"];
-		objectConfig.statutSerrurePrecedent = doc["statutSerrurePrecedent"];
-  		
+  		// Copy values from the JsonObject to the Config
+  		objectConfig.objectId = doc["objectId"];
+  		objectConfig.groupId = doc["groupId"];
+  		objectConfig.activeLeds = doc["activeLeds"];
+  		objectConfig.tailleCode = doc["tailleCode"];
+  		objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
+  		objectConfig.nbErreurCode = doc["nbErreurCode"];
+  		objectConfig.intervalBlocage = doc["intervalBlocage"];
+  		objectConfig.statutSerrureActuel = doc["statutSerrureActuel"];
+  		objectConfig.statutSerrurePrecedent = doc["statutSerrurePrecedent"];
+    		
   		if (doc.containsKey("objectName"))
   		{ 
   			strlcpy(  objectConfig.objectName,
@@ -145,8 +159,91 @@ class M_config
   		}
     }
   		
-      // Close the file (File's destructor doesn't close the file)
-      file.close();
+    // Close the file (File's destructor doesn't close the file)
+    file.close();
+  }
+
+  void readNetworkConfig(const char * filename)
+  {
+    // lire les données depuis le fichier littleFS
+    // Open file for reading
+    File file = LittleFS.open(filename, "r");
+    if (!file) 
+    {
+      Serial.println(F("Failed to open file for reading"));
+      return;
+    }
+    else
+    {
+      Serial.println(F("File opened"));
+    }
+  
+    StaticJsonDocument<1024> doc;
+    
+    // Deserialize the JSON document
+    DeserializationError error = deserializeJson(doc, file);
+    if (error)
+    {
+      Serial.println(F("Failed to deserialize file"));
+      Serial.println(error.c_str());
+    }
+    else
+    {
+      // Copy values from the JsonObject to the Config
+      
+      Serial.print("apIP  ");
+      //Serial.println(doc["apIP"].c_str());
+      
+      //networkConfig.apIP.fromString(doc["apIP"].c_str());
+      
+//      networkConfig.apIP[1] = doc["apIP[1]"];
+//      networkConfig.apIP[2] = doc["apIP[2]"];
+//      networkConfig.apIP[3] = doc["apIP[3]"];
+
+      /*
+      Serial.print(doc["apIP[0]"]);
+      Serial.print(".");
+      Serial.print(doc["apIP[1]"]);
+      Serial.print(".");
+      Serial.print(doc["apIP[2]"]);
+      Serial.print(".");
+      Serial.print(doc["apIP[3]"]);
+      Serial.println();
+      */
+
+      networkConfig.apNetMsk[0] = doc["apNetMsk[0]"];
+      networkConfig.apNetMsk[1] = doc["apNetMsk[1]"];
+      networkConfig.apNetMsk[2] = doc["apNetMsk[2]"];
+      networkConfig.apNetMsk[3] = doc["apNetMsk[3]"];
+
+      /*
+      Serial.print(doc["apNetMsk[0]"]);
+      Serial.print(".");
+      Serial.print(doc["apNetMsk[1]"]);
+      Serial.print(".");
+      Serial.print(doc["apNetMsk[2]"]);
+      Serial.print(".");
+      Serial.print(doc["apNetMsk[3]"]);
+      Serial.println();
+      */
+          
+      if (doc.containsKey("apName"))
+      { 
+        strlcpy(  networkConfig.apName,
+                  doc["apName"],
+                  sizeof(networkConfig.apName));
+      }
+
+      if (doc.containsKey("apPassword"))
+      { 
+        strlcpy(  networkConfig.apPassword,
+                  doc["apPassword"],
+                  sizeof(networkConfig.apPassword));
+      }
+    }
+      
+    // Close the file (File's destructor doesn't close the file)
+    file.close();
   }
   
   void writeObjectConfig(const char * filename)

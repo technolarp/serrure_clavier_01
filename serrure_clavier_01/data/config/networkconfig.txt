@@ -1,3 +1,6 @@
 {
-	"SId": "TEST"
+"apName": "SERRUREZZZ",
+"apPassword": "",
+"apIP":[192,168,1,2],
+"apNetMsk": [255,255,255,0]
 }

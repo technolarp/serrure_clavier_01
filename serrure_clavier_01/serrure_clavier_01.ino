@@ -25,8 +25,21 @@
    D8     BUZZER
    ----------------------------------------------------------------------------
 */
+#include <Arduino.h>
 
-#include <arduino.h>
+// WIFI
+//#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+
+AsyncWebServer server(80);
+
+//const char* ssid = "SERRURE";
+//const char* password = "";
+
+void notFound(AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "Not found");
+}
 
 // TASK SCHEDULER
 #define _TASK_OO_CALLBACKS
@@ -103,9 +116,20 @@ void setup()
   aConfig.mountFS();
   aConfig.listDir("/");
   aConfig.listDir("/config");
+  aConfig.listDir("/www");
+  
   aConfig.printJsonFile("/config/objectconfig.txt");
   aConfig.readObjectConfig("/config/objectconfig.txt");
 
+  aConfig.printJsonFile("/config/networkconfig.txt");
+  aConfig.readNetworkConfig("/config/networkconfig.txt");
+
+  Serial.println("------------------------------------");
+  Serial.println(aConfig.networkConfig.apName);
+  Serial.println(aConfig.networkConfig.apPassword);
+  Serial.println(aConfig.networkConfig.apIP);
+  Serial.println(aConfig.networkConfig.apNetMsk);
+  Serial.println("------------------------------------");
 
   // LED RGB
   aFastled = new M_fastled(&globalScheduler);
@@ -143,7 +167,45 @@ void setup()
     aConfig.printJsonFile("/config/objectconfig.txt");
 
     delay(1000);
-  }  
+  }
+
+  // WIFI
+  //IPAddress apIP(192,168,1,1);
+  //IPAddress apNetMsk(255, 255, 255, 0);
+  
+  // AP MODE
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
+  WiFi.softAP(aConfig.networkConfig.apName);
+
+  // WEB SERVER
+  // Print ESP Local IP Address
+  Serial.print(F("localIP: "));
+  Serial.println(WiFi.localIP());
+  Serial.print(F("softAPIP: "));
+  Serial.println(WiFi.softAPIP());
+
+  // Route for root / web page
+  /*
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    //request->send_P(200, "text/html", index_html, processor);
+    request->send(LittleFS, "/www/index.html");
+  });
+  */
+  
+  /*
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    request->send(LittleFS, "/www/index.html", "text/html");
+  });
+  */
+  
+  server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html").setTemplateProcessor(processor);
+  server.onNotFound(notFound);
+
+  // Start server
+  server.begin();
 
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
@@ -169,9 +231,7 @@ void setup()
    ----------------------------------------------------------------------------
 */
 void loop()
-{
-  //yield();
-  
+{  
   // manage task scheduler
   globalScheduler.execute();
 
@@ -604,4 +664,14 @@ if (aConfig.objectConfig.statutSerrureActuel == SERRURE_OUVERTE)
       aConfig.objectConfig.statutSerrureActuel = SERRURE_RECONFIG;
     }
   }
+}
+
+
+
+
+String processor(const String& var)
+{
+  if(var == "IP")
+    return(WiFi.softAPIP().toString());
+  return String();
 }
