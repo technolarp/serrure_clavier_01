@@ -124,12 +124,18 @@ void setup()
   aConfig.printJsonFile("/config/networkconfig.txt");
   aConfig.readNetworkConfig("/config/networkconfig.txt");
 
-  Serial.println("------------------------------------");
-  Serial.println(aConfig.networkConfig.apName);
-  Serial.println(aConfig.networkConfig.apPassword);
-  Serial.println(aConfig.networkConfig.apIP);
-  Serial.println(aConfig.networkConfig.apNetMsk);
-  Serial.println("------------------------------------");
+//  Serial.println(F(""));
+//  Serial.println(F("!!! TEST WRITE NETWORK"));
+//  Serial.println(F(""));
+//  aConfig.writeNetworkConfig("/config/out.txt");
+//  aConfig.printJsonFile("/config/out.txt");
+
+//  Serial.println("------------------------------------");
+//  Serial.println(aConfig.networkConfig.apName);
+//  Serial.println(aConfig.networkConfig.apPassword);
+//  Serial.println(aConfig.networkConfig.apIP);
+//  Serial.println(aConfig.networkConfig.apNetMsk);
+//  Serial.println("------------------------------------");
 
   // LED RGB
   aFastled = new M_fastled(&globalScheduler);
@@ -176,7 +182,7 @@ void setup()
   // AP MODE
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
-  WiFi.softAP(aConfig.networkConfig.apName);
+  WiFi.softAP(aConfig.networkConfig.apName, aConfig.networkConfig.apPassword);
 
   // WEB SERVER
   // Print ESP Local IP Address
@@ -202,6 +208,7 @@ void setup()
   */
   
   server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html").setTemplateProcessor(processor);
+  server.serveStatic("/config", LittleFS, "/config/");
   server.onNotFound(notFound);
 
   // Start server

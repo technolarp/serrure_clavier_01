@@ -190,42 +190,25 @@ class M_config
     else
     {
       // Copy values from the JsonObject to the Config
-      
-      Serial.print("apIP  ");
-      //Serial.println(doc["apIP"].c_str());
-      
-      //networkConfig.apIP.fromString(doc["apIP"].c_str());
-      
-//      networkConfig.apIP[1] = doc["apIP[1]"];
-//      networkConfig.apIP[2] = doc["apIP[2]"];
-//      networkConfig.apIP[3] = doc["apIP[3]"];
+      if (doc.containsKey("apIP"))
+      { 
+        JsonArray apIP = doc["apIP"];
+        
+        networkConfig.apIP[0] = apIP[0];
+        networkConfig.apIP[1] = apIP[1];
+        networkConfig.apIP[2] = apIP[2];
+        networkConfig.apIP[3] = apIP[3];
+      }
 
-      /*
-      Serial.print(doc["apIP[0]"]);
-      Serial.print(".");
-      Serial.print(doc["apIP[1]"]);
-      Serial.print(".");
-      Serial.print(doc["apIP[2]"]);
-      Serial.print(".");
-      Serial.print(doc["apIP[3]"]);
-      Serial.println();
-      */
-
-      networkConfig.apNetMsk[0] = doc["apNetMsk[0]"];
-      networkConfig.apNetMsk[1] = doc["apNetMsk[1]"];
-      networkConfig.apNetMsk[2] = doc["apNetMsk[2]"];
-      networkConfig.apNetMsk[3] = doc["apNetMsk[3]"];
-
-      /*
-      Serial.print(doc["apNetMsk[0]"]);
-      Serial.print(".");
-      Serial.print(doc["apNetMsk[1]"]);
-      Serial.print(".");
-      Serial.print(doc["apNetMsk[2]"]);
-      Serial.print(".");
-      Serial.print(doc["apNetMsk[3]"]);
-      Serial.println();
-      */
+      if (doc.containsKey("apNetMsk"))
+      { 
+        JsonArray apNetMsk = doc["apNetMsk"];
+        
+        networkConfig.apNetMsk[0] = apNetMsk[0];
+        networkConfig.apNetMsk[1] = apNetMsk[1];
+        networkConfig.apNetMsk[2] = apNetMsk[2];
+        networkConfig.apNetMsk[3] = apNetMsk[3];
+      }
           
       if (doc.containsKey("apName"))
       { 
@@ -295,6 +278,61 @@ class M_config
       Serial.println(F("Failed to write to file"));
     }
 
+    // Close the file (File's destructor doesn't close the file)
+    file.close();
+  }
+
+  void writeNetworkConfig(const char * filename)
+  {
+    // Delete existing file, otherwise the configuration is appended to the file
+    LittleFS.remove(filename);
+  
+    // Open file for writing
+    File file = LittleFS.open(filename, "w");
+    if (!file) 
+    {
+      Serial.println(F("Failed to create file"));
+      return;
+    }
+
+    // Allocate a temporary JsonDocument
+    StaticJsonDocument<1024> doc;
+
+    String newApName="";
+    String newApPassword="";
+    
+    for (int i=0;i<SIZE_ARRAY;i++)
+    {
+      newApName+= networkConfig.apName[i];
+      newApPassword+= networkConfig.apPassword[i];
+    }
+    
+    doc["apName"] = newApName;
+    doc["apPassword"] = newApPassword;
+
+    StaticJsonDocument<128> docIp;
+    JsonArray arrayIp = docIp.to<JsonArray>();
+    arrayIp.add(networkConfig.apIP[0]);
+    arrayIp.add(networkConfig.apIP[1]);
+    arrayIp.add(networkConfig.apIP[2]);
+    arrayIp.add(networkConfig.apIP[3]);
+
+    StaticJsonDocument<128> docNetMask;
+    JsonArray arrayNetMask = docNetMask.to<JsonArray>();
+    arrayNetMask.add(networkConfig.apNetMsk[0]);
+    arrayNetMask.add(networkConfig.apNetMsk[1]);
+    arrayNetMask.add(networkConfig.apNetMsk[2]);
+    arrayNetMask.add(networkConfig.apNetMsk[3]);
+    
+    doc["apIP"]=arrayIp;
+    doc["apNetMsk"]=arrayNetMask;
+
+    // Serialize JSON to file
+    if (serializeJson(doc, file) == 0) 
+    {
+      Serial.println(F("Failed to write to file"));
+    }
+    
     // Close the file (File's destructor doesn't close the file)
     file.close();
   }
