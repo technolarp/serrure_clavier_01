@@ -34,12 +34,8 @@
 
 AsyncWebServer server(80);
 
-//const char* ssid = "SERRURE";
-//const char* password = "";
-
-void notFound(AsyncWebServerRequest *request) {
-    request->send(404, "text/plain", "Not found");
-}
+// WEBSOCKET
+AsyncWebSocket ws("/ws");
 
 // TASK SCHEDULER
 #define _TASK_OO_CALLBACKS
@@ -89,6 +85,11 @@ bool uneFois = true;
 char bufferReconfig[8] = {'0','0','0','0','0','0','0','0'};
 uint8_t modeReconfig = 0;
 
+
+// HEARTBEAT
+unsigned long int previousMillisHB;
+unsigned long int currentMillisHB;
+unsigned long int intervalHB;
 
 
 /*
@@ -140,6 +141,7 @@ void setup()
   // LED RGB
   aFastled = new M_fastled(&globalScheduler);
   aFastled->setNbLed(aConfig.objectConfig.activeLeds);
+  aFastled->setBrightness(aConfig.objectConfig.brightness);
 
   // animation led de depart
   
@@ -156,9 +158,8 @@ void setup()
   // KEYPAD
   aKeypad = new M_keypad();
 
-  // CHECK RESET CONFIG
-  
-  if (aKeypad->checkReset())
+  // CHECK RESET OBJECT CONFIG  
+  if (aKeypad->checkReset('*'))
   {
     for (int i = 0; i < aConfig.objectConfig.activeLeds; i++)
     {
@@ -167,10 +168,28 @@ void setup()
     aFastled->ledShow();
     
     Serial.println(F(""));
-    Serial.println(F("!!! RESET CONFIG !!!"));
+    Serial.println(F("!!! RESET OBJECT CONFIG !!!"));
     Serial.println(F(""));
     aConfig.writeDefaultObjectConfig("/config/objectconfig.txt");
     aConfig.printJsonFile("/config/objectconfig.txt");
+
+    delay(1000);
+  }
+
+  // CHECK RESET NETWORK CONFIG  
+  if (aKeypad->checkReset('D'))
+  {
+    for (int i = 0; i < aConfig.objectConfig.activeLeds; i++)
+    {
+      aFastled->setLed(i, CRGB::Cyan);
+    }
+    aFastled->ledShow();
+    
+    Serial.println(F(""));
+    Serial.println(F("!!! RESET NETWORK CONFIG !!!"));
+    Serial.println(F(""));
+    aConfig.writeDefaultObjectConfig("/config/networkconfig.txt");
+    aConfig.printJsonFile("/config/networkconfig.txt");
 
     delay(1000);
   }
@@ -211,12 +230,21 @@ void setup()
   server.serveStatic("/config", LittleFS, "/config/");
   server.onNotFound(notFound);
 
+  // WEBSOCKET
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+
   // Start server
   server.begin();
 
   // BUZZER
   buzzer = new M_buzzer(PIN_BUZZER, &globalScheduler);
   buzzer->doubleBeep();
+
+  // HEARTBEAT
+  currentMillisHB = millis();
+  previousMillisHB = currentMillisHB;
+  intervalHB = 5000;
 
   // SERIAL
   Serial.println(F(""));
@@ -239,6 +267,12 @@ void setup()
 */
 void loop()
 {  
+  // avoid watchdog reset
+  yield();
+  
+  // WEBSOCKET
+  ws.cleanupClients();
+  
   // manage task scheduler
   globalScheduler.execute();
 
@@ -277,6 +311,27 @@ void loop()
 
   // check changement de parametres via le keypad
   checkChangementParametres();
+
+  // HEARTBEAT
+  currentMillisHB = millis();
+  if(currentMillisHB - previousMillisHB > intervalHB)
+  {
+    previousMillisHB = currentMillisHB;
+    
+    // send new value to html
+    unsigned long int now = millis() / 1000;
+    uint16_t days = now / 86400;
+    uint16_t hours = (now%86400) / 3600;
+    uint16_t minutes = (now%3600) / 60;
+    uint16_t seconds = now % 60;
+    
+    String toSend = "{\"uptime\":\"";
+    toSend+= String(days) + String("d ") + String(hours) + String("h ") + String(minutes) + String("m ") + String(seconds) + String("s");
+    toSend+= "\"}";
+    
+    //Serial.println(toSend);
+    ws.textAll(toSend);
+  }
 }
 /*
    ----------------------------------------------------------------------------
@@ -677,8 +732,94 @@ if (aConfig.objectConfig.statutSerrureActuel == SERRURE_OUVERTE)
 
 
 String processor(const String& var)
-{
-  if(var == "IP")
-    return(WiFi.softAPIP().toString());
+{  
+  if (var == "MAXLEDS")
+  {
+    return String(aFastled->getNbMaxLed());
+  }
+
+  if (var == "APNAME")
+  {
+    return String(aConfig.networkConfig.apName);
+  }
+   
   return String();
+}
+
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) 
+{
+   switch (type) 
+    {
+      case WS_EVT_CONNECT:
+        Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+        // send config value to html
+        ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
+        ws.textAll(aConfig.stringJsonFile("/config/networkconfig.txt"));
+        break;
+        
+      case WS_EVT_DISCONNECT:
+        Serial.printf("WebSocket client #%u disconnected\n", client->id());
+        break;
+        
+      case WS_EVT_DATA:
+        handleWebSocketMessage(arg, data, len);
+        break;
+        
+      case WS_EVT_PONG:
+      case WS_EVT_ERROR:
+        break;
+  }
+}
+
+
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) 
+{
+  
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) 
+  {
+    char buffer[100];
+    data[len] = 0;
+    sprintf(buffer,"%s\n", (char*)data);
+    Serial.print(buffer);
+    
+    StaticJsonDocument<256> doc;
+    DeserializationError error = deserializeJson(doc, buffer);
+    if (error)
+    {
+      Serial.println(F("Failed to deserialize buffer"));
+    }
+    else
+    {
+      if ( doc.containsKey("newReset") && doc["newReset"]==1 )
+      {
+        Serial.println(F("RESET RESET RESET"));
+        ESP.restart();
+      }
+      
+      if (doc.containsKey("newActiveLeds")) 
+      {
+        //uint8_t tmpValue = doc["newActiveLeds"];
+        aConfig.objectConfig.activeLeds = doc["newActiveLeds"];   
+      }
+        
+      if (doc.containsKey("newBrightness"))
+      {
+        //uint8_t tmpValue = doc["newBrightness"];
+        aConfig.objectConfig.brightness = doc["newBrightness"];
+        aFastled->setBrightness(aConfig.objectConfig.brightness);
+        aFastled->ledShow();
+        aConfig.writeObjectConfig("/config/objectconfig.txt");
+        aConfig.printJsonFile("/config/objectconfig.txt");
+      }
+    }
+ 
+    // clear json buffer
+    doc.clear();
+  }
+}
+
+void notFound(AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "Not found");
 }

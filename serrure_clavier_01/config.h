@@ -20,6 +20,7 @@ class M_config
     char codeSerrure[MAX_SIZE_CODE];
   	
   	uint8_t activeLeds;
+    uint8_t brightness;
   	uint8_t tailleCode;
   	uint8_t nbErreurCodeMax;
   	uint8_t nbErreurCode;
@@ -84,6 +85,8 @@ class M_config
     // Close the file (File's destructor doesn't close the file)
     file.close();
   }
+
+  
   
   void listDir(const char * dirname)
   {
@@ -137,6 +140,7 @@ class M_config
   		objectConfig.objectId = doc["objectId"];
   		objectConfig.groupId = doc["groupId"];
   		objectConfig.activeLeds = doc["activeLeds"];
+      objectConfig.brightness = doc["brightness"];      
   		objectConfig.tailleCode = doc["tailleCode"];
   		objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
   		objectConfig.nbErreurCode = doc["nbErreurCode"];
@@ -248,6 +252,7 @@ class M_config
     doc["objectId"] = objectConfig.objectId;
     doc["groupId"] = objectConfig.groupId;
     doc["activeLeds"] = objectConfig.activeLeds;
+    doc["brightness"] = objectConfig.brightness;    
     doc["tailleCode"] = objectConfig.tailleCode;
     doc["nbErreurCodeMax"] = objectConfig.nbErreurCodeMax;
     doc["nbErreurCode"] = objectConfig.nbErreurCode;
@@ -342,6 +347,7 @@ class M_config
 	objectConfig.objectId = 1;
 	objectConfig.groupId = 1;
 	objectConfig.activeLeds = 8;
+  objectConfig.brightness = 80;  
 	objectConfig.tailleCode = 4;
 	objectConfig.nbErreurCodeMax = 3;
 	objectConfig.nbErreurCode = 0;
@@ -359,5 +365,57 @@ class M_config
 		
 	writeObjectConfig(filename);
   }
-	
+
+  void writeDefaultNetworkConfig(const char * filename)
+  {
+  strlcpy(  networkConfig.apName,
+                  "SERRURE",
+                  sizeof("SERRURE"));
+  
+  strlcpy(  networkConfig.apPassword,
+                  "",
+                  sizeof(""));
+
+  networkConfig.apIP[0]=192;
+  networkConfig.apIP[1]=168;
+  networkConfig.apIP[2]=1;
+  networkConfig.apIP[3]=1;
+
+  networkConfig.apNetMsk[0]=255;
+  networkConfig.apNetMsk[1]=255;
+  networkConfig.apNetMsk[2]=255;
+  networkConfig.apNetMsk[3]=0;
+    
+  writeNetworkConfig(filename);
+  }
+
+  String stringJsonFile(const char * filename)
+  {
+    String result = "";
+    
+    // Open file for reading
+    File file = LittleFS.open(filename, "r");
+    if (!file) 
+    {
+      Serial.println(F("Failed to open file for reading"));
+    }
+      
+    StaticJsonDocument<1024> doc;
+    
+    // Deserialize the JSON document
+    DeserializationError error = deserializeJson(doc, file);
+    if (error)
+    {
+      Serial.println(F("Failed to deserialize file"));
+      Serial.println(error.c_str());
+    }
+    else
+    {
+      serializeJson(doc, result);
+    }
+    
+    // Close the file (File's destructor doesn't close the file)
+    file.close();
+    return(result);
+  }
 };
