@@ -28,8 +28,11 @@
 
 /*
  * TODO
- * switch statut serrure plutot que nombre
- * add blink html
+ * check sur valeur min et max
+ * check sur char du code
+ * bug quand on passe de bloquee a fermee via le webui
+ * bug leds
+ * 
 */
 
 #include <Arduino.h>
@@ -75,7 +78,8 @@ enum {
   SERRURE_FERMEE = 1,
   SERRURE_BLOQUEE = 2,
   SERRURE_ERREUR = 3,
-  SERRURE_RECONFIG = 4
+  SERRURE_RECONFIG = 4,
+  SERRURE_BLINK = 5
 };
 
 // PARAM RECONFIG
@@ -201,10 +205,7 @@ void setup()
     delay(1000);
   }
 
-  // WIFI
-  //IPAddress apIP(192,168,1,1);
-  //IPAddress apNetMsk(255, 255, 255, 0);
-  
+  // WIFI  
   // AP MODE
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
@@ -218,22 +219,7 @@ void setup()
   Serial.println(WiFi.softAPIP());
 
   // Route for root / web page
-  /*
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-    //request->send_P(200, "text/html", index_html, processor);
-    request->send(LittleFS, "/www/index.html");
-  });
-  */
-  
-  /*
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-    request->send(LittleFS, "/www/index.html", "text/html");
-  });
-  */
-  
-  server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html").setTemplateProcessor(processor);
+  server.serveStatic("/", LittleFS, "/www/").setDefaultFile("config.html").setTemplateProcessor(processor);
   server.serveStatic("/config", LittleFS, "/config/");
   server.onNotFound(notFound);
 
@@ -311,6 +297,11 @@ void loop()
       serrureReconfig();
       break;
 
+    case SERRURE_BLINK:
+      // blink led pour identification
+      serrureBlink();
+      break;
+      
     default:
       // nothing
       break;
@@ -428,7 +419,7 @@ void serrureErreur()
     // ecrire la config sur littleFS
     aConfig.writeObjectConfig("/config/objectconfig.txt");
 
-    // resend conif object
+    // resend config object
     ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
@@ -438,7 +429,7 @@ void serrureBloquee()
   if (!aFastled->isEnabled() && uneFois)
   {
     uneFois = false;
-    aFastled->startAnimSerrureBloquee(aConfig.objectConfig.intervalBlocage*2, 500);
+    aFastled->startAnimSerrureBloquee(aConfig.objectConfig.delaiBlocage*2, 500);
   }
 
   if (!aFastled->isAnimActive())
@@ -453,7 +444,7 @@ void serrureBloquee()
     // ecrire la config sur littleFS
     aConfig.writeObjectConfig("/config/objectconfig.txt");
     
-    // resend conif object
+    // resend config object
     ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
@@ -562,10 +553,10 @@ void serrureReconfig()
         nouveauDelai=max<int>(nouveauDelai,1);
         nouveauDelai=min<int>(nouveauDelai,300);
 
-        aConfig.objectConfig.intervalBlocage=nouveauDelai;
+        aConfig.objectConfig.delaiBlocage=nouveauDelai;
 
         Serial.print(F("NOUVEAU DELAI BLOCAGE : "));
-        Serial.print(aConfig.objectConfig.intervalBlocage);
+        Serial.print(aConfig.objectConfig.delaiBlocage);
         Serial.println(F(" SECONDES"));
       }
       else if (modeReconfig == RECONFIG_TAILLE_CODE)
@@ -609,7 +600,32 @@ void serrureReconfig()
     aConfig.writeObjectConfig("/config/objectconfig.txt");
     aConfig.printJsonFile("/config/objectconfig.txt");
 
-    // resend conif object
+    // resend config object
+    ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
+  }
+}
+
+void serrureBlink()
+{
+  if (!aFastled->isEnabled() && uneFois)
+  {
+    uneFois = false;
+    aFastled->startAnimBlink(15, 200, CRGB::Blue, aConfig.objectConfig.activeLeds);
+  }
+
+  if (!aFastled->isAnimActive())
+  {
+    Serial.println(F("END TASK BLINK"));
+
+    uneFois = true;
+
+    // retour au statut precedent
+    aConfig.objectConfig.statutSerrureActuel = aConfig.objectConfig.statutSerrurePrecedent;
+    
+    // ecrire la config sur littleFS
+    aConfig.writeObjectConfig("/config/objectconfig.txt");
+
+    // resend config object
     ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
@@ -691,7 +707,7 @@ void appuiClavier()
       // ecrire la config sur littleFS
       aConfig.writeObjectConfig("/config/objectconfig.txt");
 
-      // resend conif object
+      // resend config object
       ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
     }
   }
@@ -761,6 +777,11 @@ String processor(const String& var)
   {
     return String(aConfig.networkConfig.apName);
   }
+
+  if (var == "OBJECTNAME")
+  {
+    return String(aConfig.objectConfig.objectName);
+  }
    
   return String();
 }
@@ -811,43 +832,201 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     }
     else
     {
-      if ( doc.containsKey("new_reset") && doc["new_reset"]==1 )
-      {
-        Serial.println(F("RESET RESET RESET"));
-        ESP.restart();
-      }
+      // write config or not
+      bool writeObjectConfig = false;
+      bool sendObjectConfig = false;
+      bool writeNetworkConfig = false;
+      bool sendNetworkConfig = false;
       
-      if (doc.containsKey("new_activeLeds")) 
+      // change object config
+      if (doc.containsKey("new_objectName")) 
       {
-        //uint8_t tmpValue = doc["newActiveLeds"];
-        aFastled->allLedOff();
-        aConfig.objectConfig.activeLeds = doc["new_activeLeds"];
-        uneFois = true;
-      }
-        
-      if (doc.containsKey("new_brightness"))
-      {
-        //uint8_t tmpValue = doc["new_brightness"];
-        aConfig.objectConfig.brightness = doc["new_brightness"];
-        aFastled->setBrightness(aConfig.objectConfig.brightness);
-        aConfig.writeObjectConfig("/config/objectconfig.txt");
-        aConfig.printJsonFile("/config/objectconfig.txt");
-        uneFois = true;
+        strlcpy(  aConfig.objectConfig.objectName,
+                  doc["new_objectName"],
+                  sizeof(aConfig.objectConfig.objectName));
+
+        writeObjectConfig = true;
+        sendObjectConfig = false;
       }
 
+      if (doc.containsKey("new_codeSerrure")) 
+      {
+        strlcpy(  aConfig.objectConfig.codeSerrure,
+                  doc["new_codeSerrure"],
+                  sizeof(aConfig.objectConfig.codeSerrure));
+        
+        writeObjectConfig = true;
+        sendObjectConfig = true;
+      }
+
+      if (doc.containsKey("new_objectId")) 
+      {
+        aConfig.objectConfig.objectId = doc["new_objectId"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+
+      if (doc.containsKey("new_groupId")) 
+      {
+        aConfig.objectConfig.groupId = doc["new_groupId"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+
+      if (doc.containsKey("new_activeLeds")) 
+      {
+        aFastled->allLedOff();
+        aConfig.objectConfig.activeLeds = doc["new_activeLeds"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+
+      if (doc.containsKey("new_brightness"))
+      {
+        aConfig.objectConfig.brightness = doc["new_brightness"];
+        aFastled->setBrightness(aConfig.objectConfig.brightness);
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+
+      if (doc.containsKey("new_tailleCode")) 
+      {
+        aConfig.objectConfig.tailleCode = doc["new_tailleCode"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+
+      if (doc.containsKey("new_nbErreurCodeMax")) 
+      {
+        aConfig.objectConfig.nbErreurCodeMax = doc["new_nbErreurCodeMax"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+      
+      if (doc.containsKey("new_delaiBlocage")) 
+      {
+        aConfig.objectConfig.delaiBlocage = doc["new_delaiBlocage"];
+        writeObjectConfig = true;
+        sendObjectConfig = false;
+      }
+      
       if (doc.containsKey("new_statutSerrureActuel"))
       {
         aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
         aConfig.objectConfig.statutSerrureActuel = doc["new_statutSerrureActuel"];
         
+        writeObjectConfig = true;
+        sendObjectConfig = true;
+      }
+
+      if ( doc.containsKey("new_resetErreur") && doc["new_resetErreur"]==1 )
+      {
+        Serial.println(F("Reset erreurs"));
+        aConfig.objectConfig.nbErreurCode = 0;
+
+        writeObjectConfig = true;
+        sendObjectConfig = true;
+      }
+        
+      // modif network config
+      
+      // change object config
+      if (doc.containsKey("new_apName")) 
+      {
+        strlcpy(  aConfig.networkConfig.apName,
+                  doc["new_apName"],
+                  sizeof(aConfig.networkConfig.apName));
+
+        writeNetworkConfig = true;
+      }
+
+      if (doc.containsKey("new_apPassword")) 
+      {
+        strlcpy(  aConfig.networkConfig.apPassword,
+                  doc["new_apPassword"],
+                  sizeof(aConfig.networkConfig.apPassword));
+
+        writeNetworkConfig = true;
+      }
+
+      if (doc.containsKey("new_apIP")) 
+      {
+        char newIPchar[16] = "";
+
+        strlcpy(  newIPchar,
+                  doc["new_apIP"],
+                  sizeof(newIPchar));
+
+        IPAddress newIP;
+        if (newIP.fromString(newIPchar)) 
+        {
+          Serial.println("valid IP");
+          aConfig.networkConfig.apIP = newIP;
+
+          writeNetworkConfig = true;
+        }
+      }
+
+      if (doc.containsKey("new_apNetMsk")) 
+      {
+        char newNMchar[16] = "";
+
+        strlcpy(  newNMchar,
+                  doc["new_apNetMsk"],
+                  sizeof(newNMchar));
+
+        IPAddress newNM;
+        if (newNM.fromString(newNMchar)) 
+        {
+          Serial.println("valid netmask");
+          aConfig.networkConfig.apNetMsk = newNM;
+
+          writeNetworkConfig = true;
+        }
+      }
+      
+      // actions sur le esp8266
+      if ( doc.containsKey("new_restart") && doc["new_restart"]==1 )
+      {
+        Serial.println(F("RESTART RESTART RESTART"));
+        ESP.restart();
+      }
+
+      if ( doc.containsKey("new_refresh") && doc["new_refresh"]==1 )
+      {
+        Serial.println(F("REFRESH"));
+        sendObjectConfig = true;
+        sendNetworkConfig = true;
+      }
+
+      // modif config
+      // write object config
+      if (writeObjectConfig)
+      {
         aConfig.writeObjectConfig("/config/objectconfig.txt");
         aConfig.printJsonFile("/config/objectconfig.txt");
-
-        // resend conif object
-        ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
         
-        // update leds
+        // update statut
         uneFois = true;
+      }
+
+      // resend object config
+      if (sendObjectConfig)
+      {
+        ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
+      }
+
+      // write network config
+      if (writeNetworkConfig)
+      {
+        aConfig.writeNetworkConfig("/config/networkconfig.txt");
+        aConfig.printJsonFile("/config/networkconfig.txt");
+      }
+
+      // resend network config
+      if (sendNetworkConfig)
+      {
+        ws.textAll(aConfig.stringJsonFile("/config/networkconfig.txt"));
       }
     }
  
@@ -856,6 +1035,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
   }
 }
 
-void notFound(AsyncWebServerRequest *request) {
+void notFound(AsyncWebServerRequest *request)
+{
     request->send(404, "text/plain", "Not found");
 }

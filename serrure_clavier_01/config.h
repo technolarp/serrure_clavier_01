@@ -24,7 +24,7 @@ class M_config
   	uint8_t tailleCode;
   	uint8_t nbErreurCodeMax;
   	uint8_t nbErreurCode;
-  	uint16_t intervalBlocage;
+  	uint16_t delaiBlocage;
   	uint8_t statutSerrureActuel;
   	uint8_t statutSerrurePrecedent;
   };
@@ -144,7 +144,7 @@ class M_config
   		objectConfig.tailleCode = doc["tailleCode"];
   		objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
   		objectConfig.nbErreurCode = doc["nbErreurCode"];
-  		objectConfig.intervalBlocage = doc["intervalBlocage"];
+  		objectConfig.delaiBlocage = doc["delaiBlocage"];
   		objectConfig.statutSerrureActuel = doc["statutSerrureActuel"];
   		objectConfig.statutSerrurePrecedent = doc["statutSerrurePrecedent"];
     		
@@ -256,7 +256,7 @@ class M_config
     doc["tailleCode"] = objectConfig.tailleCode;
     doc["nbErreurCodeMax"] = objectConfig.nbErreurCodeMax;
     doc["nbErreurCode"] = objectConfig.nbErreurCode;
-    doc["intervalBlocage"] = objectConfig.intervalBlocage;
+    doc["delaiBlocage"] = objectConfig.delaiBlocage;
     doc["statutSerrureActuel"] = objectConfig.statutSerrureActuel;
     doc["statutSerrurePrecedent"] = objectConfig.statutSerrurePrecedent;
     
@@ -351,7 +351,7 @@ class M_config
 	objectConfig.tailleCode = 4;
 	objectConfig.nbErreurCodeMax = 3;
 	objectConfig.nbErreurCode = 0;
-	objectConfig.intervalBlocage = 10;
+	objectConfig.delaiBlocage = 10;
 	objectConfig.statutSerrureActuel = 1;
 	objectConfig.statutSerrurePrecedent = 1;
 	

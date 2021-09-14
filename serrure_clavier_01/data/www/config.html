@@ -8,7 +8,7 @@
 		table {border-collapse:collapse; max-width: 1000px;}
 		td {text-align: center;}
 		</style>
-		<title>%APNAME% Back Office</title>
+		<title>%OBJECTNAME% Back Office</title>
 	</head>
 	<script>
   lastHeartBeat = Date.now();
@@ -93,15 +93,15 @@
       document.getElementById("brightness2").innerHTML = obj.brightness;
     }
 	
-	if (obj.hasOwnProperty('codeSerrure'))
-    {
-      document.getElementById("codeSerrure").value = obj.codeSerrure;
-    }
-	
 	if (obj.hasOwnProperty('tailleCode'))
     {
       document.getElementById("tailleCode").value = obj.tailleCode;
     }
+	
+	if (obj.hasOwnProperty('codeSerrure'))
+    {
+      document.getElementById("codeSerrure").value = obj.codeSerrure.substring(0, document.getElementById("tailleCode").value);
+    }	
 	
 	if (obj.hasOwnProperty('nbErreurCodeMax'))
     {
@@ -113,20 +113,76 @@
       document.getElementById("nbErreurCode").innerHTML = obj.nbErreurCode;
     }
 	
-	if (obj.hasOwnProperty('intervalBlocage'))
+	if (obj.hasOwnProperty('delaiBlocage'))
     {
-      document.getElementById("intervalBlocage").value = obj.intervalBlocage;
-      document.getElementById("intervalBlocage2").innerHTML = obj.intervalBlocage;
+      document.getElementById("delaiBlocage").value = obj.delaiBlocage;
+      document.getElementById("delaiBlocage").innerHTML = obj.delaiBlocage;
     }
 	
 	if (obj.hasOwnProperty('statutSerrureActuel'))
     {
-      document.getElementById("statutSerrureActuel").innerHTML = obj.statutSerrureActuel;
+		switch (obj.statutSerrureActuel)
+		{
+		case 0:
+			document.getElementById("statutSerrureActuel").innerHTML = "OUVERTE";
+		break;
+		
+		case 1:
+			document.getElementById("statutSerrureActuel").innerHTML = "FERMEE";
+		break;
+		
+		case 2:
+			document.getElementById("statutSerrureActuel").innerHTML = "BLOQUEE";
+		break;
+		
+		case 3:
+			document.getElementById("statutSerrureActuel").innerHTML = "ERREUR";
+		break;
+		
+		case 4:
+			document.getElementById("statutSerrureActuel").innerHTML = "RECONFIG";
+		break;
+		
+		case 5:
+			document.getElementById("statutSerrureActuel").innerHTML = "BLINK";
+		break;
+		
+		default:
+		document.getElementById("statutSerrureActuel").innerHTML = "N/A";
+		}
     }
 	
 	if (obj.hasOwnProperty('statutSerrurePrecedent'))
     {
-      document.getElementById("statutSerrurePrecedent").innerHTML = obj.statutSerrurePrecedent;
+		switch (obj.statutSerrurePrecedent)
+		{
+		case 0:
+			document.getElementById("statutSerrurePrecedent").innerHTML = "OUVERTE";
+		break;
+		
+		case 1:
+			document.getElementById("statutSerrurePrecedent").innerHTML = "FERMEE";
+		break;
+		
+		case 2:
+			document.getElementById("statutSerrurePrecedent").innerHTML = "BLOQUEE";
+		break;
+		
+		case 3:
+			document.getElementById("statutSerrurePrecedent").innerHTML = "ERREUR";
+		break;
+		
+		case 4:
+			document.getElementById("statutSerrurePrecedent").innerHTML = "RECONFIG";
+		break;
+		
+		case 5:
+			document.getElementById("statutSerrureActuel").innerHTML = "BLINK";
+		break;
+		
+		default:
+		document.getElementById("statutSerrurePrecedent").innerHTML = "N/A";
+		}
     }
 	
 	if (obj.hasOwnProperty('apName'))
@@ -168,9 +224,9 @@
       document.getElementById("brightness2").innerHTML = val;
     }
 	
-	if (name=="intervalBlocage")
+	if (name=="delaiBlocage")
     {
-      document.getElementById("intervalBlocage2").innerHTML = val;
+      document.getElementById("delaiBlocage").innerHTML = val;
     }
   }
   
@@ -180,7 +236,7 @@
 	<body>
 	<table>
     <tr>
-      <td colspan="2"><h2>Back Office</h2></td>
+      <td colspan="2"><h2>%OBJECTNAME% Back Office</h2></td>
     </tr>
     <tr>
       <td>Object name </td>
@@ -203,24 +259,24 @@
       <td><input class="enabled" id="brightness" name="brightness" type="range" min="0" max="255" step="5" onChange="sendNewValue('brightness',document.getElementById('brightness').value, false);"></td>
     </tr>
 	<tr>
+      <td>Taille de code </td>
+      <td><input type="number" id="tailleCode" name="tailleCode" min="1" max="8" onchange="sendNewValue('tailleCode',document.getElementById('tailleCode').value, false);sendNewValue('refresh',1);"> &nbsp; &nbsp; &nbsp; &nbsp;  1 - 8</td>
+    </tr>
+	<tr>
       <td>Code serrure </td>
       <td><input type="text" id="codeSerrure" name="codeSerrure" onchange="sendNewValue('codeSerrure',document.getElementById('codeSerrure').value, true);"> &nbsp; &nbsp; &nbsp; &nbsp; 8 characters max in [0123456789ABCD*]</td>
-    </tr>
+    </tr>	
 	<tr>
-      <td>Taille de code </td>
-      <td><input type="number" id="tailleCode" name="tailleCode" min="1" max="8" onchange="sendNewValue('tailleCode',document.getElementById('tailleCode').value, false);"> &nbsp; &nbsp; &nbsp; &nbsp;  1 - 8</td>
-    </tr>
-	<tr>
-      <td>Nombre Erreur Code Actuel </td>
-      <td><span id="nbErreurCode"></span></td>
+      <td>Nombre Erreur Code Actuel : <span id="nbErreurCode" ></span></td>
+      <td><button onclick="sendNewValue('resetErreur',1);">Reset Erreurs</button></td>
     </tr>
 	<tr>
       <td>Nombre Erreur Code MAX </td>
       <td><input type="number" id="nbErreurCodeMax" name="nbErreurCodeMax" min="1" max="50" onchange="sendNewValue('nbErreurCodeMax',document.getElementById('nbErreurCodeMax').value, false);"></td>
     </tr>
 	<tr>
-      <td>Delai de Blocage : <span id="intervalBlocage2"></span></td>
-      <td><input class="enabled" id="intervalBlocage" name="intervalBlocage" type="range" min="5" max="300" step="5" onChange="sendNewValue('intervalBlocage',document.getElementById('intervalBlocage').value, false);"> 5 - 300  secondes</td>
+      <td>Delai de Blocage : <span id="delaiBlocage2"></span></td>
+      <td><input class="enabled" id="delaiBlocage" name="delaiBlocage" type="range" min="5" max="300" step="5" onChange="sendNewValue('delaiBlocage',document.getElementById('delaiBlocage').value, false);"> 5 - 300  secondes</td>
     </tr>
 	<tr>
       <td>Statuts Serrure</td>
@@ -247,11 +303,11 @@
     </tr>
 	<tr>
       <td>AP IP </td>
-      <td><input type="text" id="apIP" name="apIP" onchange="sendNewValue('apIP',document.getElementById('apIP').value, true);"></td>
+      <td><input type="text" id="apIP" name="apIP" onchange="sendNewValue('apIP',document.getElementById('apIP').value, true);"> &nbsp; !! restart obligatoire apres modif !!</td>
     </tr>
 	<tr>
       <td>AP netmask </td>
-      <td><input type="text" id="apNetMsk" name="apNetMsk" onchange="sendNewValue('apNetMsk',document.getElementById('apNetMsk').value, true);"></td>
+      <td><input type="text" id="apNetMsk" name="apNetMsk" onchange="sendNewValue('apNetMsk',document.getElementById('apNetMsk').value, true);"> &nbsp; !! restart obligatoire apres modif !!</td>
     </tr>
 	<tr>
       <td>WebSocket Connexion </td>
@@ -259,15 +315,23 @@
     </tr>
     <tr>
       <td>Uptime </td>
-      <td><span id="uptime">%UPTIME%</span></td>
+      <td><span id="uptime"></span></td>
     </tr>
     <tr>
       <td>Heartbeat </td>
       <td ><span style="color:red; font-weight:bold; font-size:20px;" id="heartbeat">&#x2620;</span></td>
     </tr>
 	<tr>
-      <td>RESET esp8266</td>
-      <td><button onclick="sendNewValue('reset',1);">RESET</button></td>
+      <td>BLINK esp8266</td>
+      <td><button onclick="sendNewValue('statutSerrureActuel',5);">BLINK</button></td>
+    </tr>
+	<tr>
+      <td>Refresh config</td>
+      <td><button onclick="sendNewValue('refresh',1);">REFRESH</button></td>
+    </tr>
+	<tr>
+      <td>RESTART esp8266</td>
+      <td><button onclick="sendNewValue('restart',1);">RESTART</button></td>
     </tr>
 	</table>	
 	</body>
