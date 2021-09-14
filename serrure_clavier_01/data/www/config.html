@@ -138,19 +138,29 @@
     {
       document.getElementById("apPassword").value = obj.apPassword;
     }
+	
+	if (obj.hasOwnProperty('apIP'))
+    {
+      document.getElementById("apIP").value = obj.apIP[0] + "." + obj.apIP[1] + "." + obj.apIP[2] + "." + obj.apIP[3];
+    }
+	
+	if (obj.hasOwnProperty('apNetMsk'))
+    {
+      document.getElementById("apNetMsk").value = obj.apNetMsk[0] + "." + obj.apNetMsk[1] + "." + obj.apNetMsk[2] + "." + obj.apNetMsk[3];
+    }
   }
   
   function sendNewValue(name, val, string) 
   {
     if (string)
 	{
-		console.log("{\"new"+ name + "\":\"" + val + "\"}");
-		websocket.send("{\"new"+ name + "\":\"" + val + "\"}");
+		console.log("{\"new_"+ name + "\":\"" + val + "\"}");
+		websocket.send("{\"new_"+ name + "\":\"" + val + "\"}");
 	}
 	else
 	{
-		console.log("{\"new"+ name + "\":" + val + "}");
-		websocket.send("{\"new"+ name + "\":" + val + "}");
+		console.log("{\"new_"+ name + "\":" + val + "}");
+		websocket.send("{\"new_"+ name + "\":" + val + "}");
 	}
 	
 	if (name=="brightness")
@@ -214,6 +224,14 @@
     </tr>
 	<tr>
       <td>Statuts Serrure</td>
+      <td>
+		<button onclick="sendNewValue('statutSerrureActuel',0, false);">Ouverte</button>
+		<button onclick="sendNewValue('statutSerrureActuel',1, false);">Fermée</button>
+		<button onclick="sendNewValue('statutSerrureActuel',2, false);">Bloquée</button>
+	  </td>
+    </tr>
+	<tr>
+      <td>Statuts Serrure</td>
       <td>statut Serrure Precedent : <span id="statutSerrurePrecedent"></span><br>statut Serrure Actuel : <span id="statutSerrureActuel"></span></td>
     </tr>
 	<tr>
@@ -226,6 +244,14 @@
 	<tr>
       <td>AP password </td>
       <td><input type="text" id="apPasword" name="apPasword" onchange="sendNewValue('apPasword',document.getElementById('apPasword').value, true);"> &nbsp; &nbsp; &nbsp; &nbsp; vide ou min 8 - max 20 characters</td>
+    </tr>
+	<tr>
+      <td>AP IP </td>
+      <td><input type="text" id="apIP" name="apIP" onchange="sendNewValue('apIP',document.getElementById('apIP').value, true);"></td>
+    </tr>
+	<tr>
+      <td>AP netmask </td>
+      <td><input type="text" id="apNetMsk" name="apNetMsk" onchange="sendNewValue('apNetMsk',document.getElementById('apNetMsk').value, true);"></td>
     </tr>
 	<tr>
       <td>WebSocket Connexion </td>
@@ -241,7 +267,7 @@
     </tr>
 	<tr>
       <td>RESET esp8266</td>
-      <td><button onclick="sendNewValue('Reset',1);">RESET</button></td>
+      <td><button onclick="sendNewValue('reset',1);">RESET</button></td>
     </tr>
 	</table>	
 	</body>

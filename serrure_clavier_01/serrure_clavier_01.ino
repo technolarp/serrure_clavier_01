@@ -25,6 +25,13 @@
    D8     BUZZER
    ----------------------------------------------------------------------------
 */
+
+/*
+ * TODO
+ * switch statut serrure plutot que nombre
+ * add blink html
+*/
+
 #include <Arduino.h>
 
 // WIFI
@@ -420,6 +427,9 @@ void serrureErreur()
 
     // ecrire la config sur littleFS
     aConfig.writeObjectConfig("/config/objectconfig.txt");
+
+    // resend conif object
+    ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
 
@@ -442,6 +452,9 @@ void serrureBloquee()
 
     // ecrire la config sur littleFS
     aConfig.writeObjectConfig("/config/objectconfig.txt");
+    
+    // resend conif object
+    ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
 
@@ -595,6 +608,9 @@ void serrureReconfig()
     // ecrire la config sur littleFS
     aConfig.writeObjectConfig("/config/objectconfig.txt");
     aConfig.printJsonFile("/config/objectconfig.txt");
+
+    // resend conif object
+    ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
   }
 }
 
@@ -674,6 +690,9 @@ void appuiClavier()
 
       // ecrire la config sur littleFS
       aConfig.writeObjectConfig("/config/objectconfig.txt");
+
+      // resend conif object
+      ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
     }
   }
 }
@@ -792,26 +811,43 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     }
     else
     {
-      if ( doc.containsKey("newReset") && doc["newReset"]==1 )
+      if ( doc.containsKey("new_reset") && doc["new_reset"]==1 )
       {
         Serial.println(F("RESET RESET RESET"));
         ESP.restart();
       }
       
-      if (doc.containsKey("newActiveLeds")) 
+      if (doc.containsKey("new_activeLeds")) 
       {
         //uint8_t tmpValue = doc["newActiveLeds"];
-        aConfig.objectConfig.activeLeds = doc["newActiveLeds"];   
+        aFastled->allLedOff();
+        aConfig.objectConfig.activeLeds = doc["new_activeLeds"];
+        uneFois = true;
       }
         
-      if (doc.containsKey("newBrightness"))
+      if (doc.containsKey("new_brightness"))
       {
-        //uint8_t tmpValue = doc["newBrightness"];
-        aConfig.objectConfig.brightness = doc["newBrightness"];
+        //uint8_t tmpValue = doc["new_brightness"];
+        aConfig.objectConfig.brightness = doc["new_brightness"];
         aFastled->setBrightness(aConfig.objectConfig.brightness);
-        aFastled->ledShow();
         aConfig.writeObjectConfig("/config/objectconfig.txt");
         aConfig.printJsonFile("/config/objectconfig.txt");
+        uneFois = true;
+      }
+
+      if (doc.containsKey("new_statutSerrureActuel"))
+      {
+        aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
+        aConfig.objectConfig.statutSerrureActuel = doc["new_statutSerrureActuel"];
+        
+        aConfig.writeObjectConfig("/config/objectconfig.txt");
+        aConfig.printJsonFile("/config/objectconfig.txt");
+
+        // resend conif object
+        ws.textAll(aConfig.stringJsonFile("/config/objectconfig.txt"));
+        
+        // update leds
+        uneFois = true;
       }
     }
  
