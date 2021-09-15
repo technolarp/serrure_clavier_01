@@ -876,6 +876,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         
         uint16_t tmpValeur = doc["new_activeLeds"];
         aConfig.objectConfig.activeLeds = checkValeur(tmpValeur,1,aFastled->getNbMaxLed());
+        aFastled->setNbLed(aConfig.objectConfig.activeLeds);
         
         writeObjectConfig = true;
         sendObjectConfig = true;
