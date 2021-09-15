@@ -26,21 +26,9 @@
    ----------------------------------------------------------------------------
 */
 
-/*
- * TODO
- * check sur valeur min et max
- * check sur char du code
- * bug quand on passe de bloquee a fermee via le webui
- * bug leds  , 
- * 			check https://github.com/FastLED/FastLED/issues/1269
-			https://github.com/FastLED/FastLED/issues/1260
- * 
-*/
-
 #include <Arduino.h>
 
 // WIFI
-//#include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
@@ -138,26 +126,12 @@ void setup()
   aConfig.printJsonFile("/config/networkconfig.txt");
   aConfig.readNetworkConfig("/config/networkconfig.txt");
 
-//  Serial.println(F(""));
-//  Serial.println(F("!!! TEST WRITE NETWORK"));
-//  Serial.println(F(""));
-//  aConfig.writeNetworkConfig("/config/out.txt");
-//  aConfig.printJsonFile("/config/out.txt");
-
-//  Serial.println("------------------------------------");
-//  Serial.println(aConfig.networkConfig.apName);
-//  Serial.println(aConfig.networkConfig.apPassword);
-//  Serial.println(aConfig.networkConfig.apIP);
-//  Serial.println(aConfig.networkConfig.apNetMsk);
-//  Serial.println("------------------------------------");
-
   // LED RGB
   aFastled = new M_fastled(&globalScheduler);
   aFastled->setNbLed(aConfig.objectConfig.activeLeds);
   aFastled->setBrightness(aConfig.objectConfig.brightness);
 
-  // animation led de depart
-  
+  // animation led de depart  
   aFastled->allLedOff();
   for (int i = 0; i < aConfig.objectConfig.activeLeds * 2; i++)
   {
@@ -208,16 +182,15 @@ void setup()
   }
 
   // WIFI  
-  /*
   // AP MODE
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
   WiFi.softAP(aConfig.networkConfig.apName, aConfig.networkConfig.apPassword);
-  */
-
-  // CLIENT MODE
+  
+  /*
+  // CLIENT MODE POUR DEBUG
   const char* ssid = "MYDEBUG";
-  const char* password = "782ePAFm";
+  const char* password = "-------";
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
@@ -226,6 +199,7 @@ void setup()
         Serial.printf("WiFi Failed!\n");
         
     }
+  */
   
   // WEB SERVER
   // Print ESP Local IP Address
@@ -854,7 +828,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       bool writeNetworkConfig = false;
       bool sendNetworkConfig = false;
       
-      // change object config
+      // modif object config
       if (doc.containsKey("new_objectName"))
       {
         strlcpy(  aConfig.objectConfig.objectName,
@@ -862,7 +836,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
                   sizeof(aConfig.objectConfig.objectName));
 
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_codeSerrure")) 
@@ -880,59 +854,77 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
       if (doc.containsKey("new_objectId")) 
       {
-        aConfig.objectConfig.objectId = doc["new_objectId"];
+        uint16_t tmpValeur = doc["new_objectId"];
+        aConfig.objectConfig.objectId = checkValeur(tmpValeur,1,1000);
+
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_groupId")) 
       {
-        aConfig.objectConfig.groupId = doc["new_groupId"];
+        uint16_t tmpValeur = doc["new_groupId"];
+        aConfig.objectConfig.groupId = checkValeur(tmpValeur,1,1000);
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_activeLeds")) 
       {
         aFastled->allLedOff();
-        aConfig.objectConfig.activeLeds = doc["new_activeLeds"];
+        
+        uint16_t tmpValeur = doc["new_activeLeds"];
+        aConfig.objectConfig.activeLeds = checkValeur(tmpValeur,1,aFastled->getNbMaxLed());
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_brightness"))
       {
-        aConfig.objectConfig.brightness = doc["new_brightness"];
+        uint16_t tmpValeur = doc["new_brightness"];
+        aConfig.objectConfig.brightness = checkValeur(tmpValeur,0,255);
         aFastled->setBrightness(aConfig.objectConfig.brightness);
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_tailleCode")) 
       {
-        aConfig.objectConfig.tailleCode = doc["new_tailleCode"];
+        uint16_t tmpValeur = doc["new_tailleCode"];
+        aConfig.objectConfig.tailleCode = checkValeur(tmpValeur,1,8);
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
 
       if (doc.containsKey("new_nbErreurCodeMax")) 
       {
-        aConfig.objectConfig.nbErreurCodeMax = doc["new_nbErreurCodeMax"];
+        uint16_t tmpValeur = doc["new_nbErreurCodeMax"];
+        aConfig.objectConfig.nbErreurCodeMax = checkValeur(tmpValeur,1,50);
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
       
       if (doc.containsKey("new_delaiBlocage")) 
       {
-        aConfig.objectConfig.delaiBlocage = doc["new_delaiBlocage"];
+        uint16_t tmpValeur = doc["new_delaiBlocage"];
+        aConfig.objectConfig.delaiBlocage = checkValeur(tmpValeur,5,300);
+        
         writeObjectConfig = true;
-        sendObjectConfig = false;
+        sendObjectConfig = true;
       }
       
       if (doc.containsKey("new_statutSerrureActuel"))
       {
         aConfig.objectConfig.statutSerrurePrecedent = aConfig.objectConfig.statutSerrureActuel;
         aConfig.objectConfig.statutSerrureActuel = doc["new_statutSerrureActuel"];
+
+        aFastled->disable();
+        aFastled->setAnim(0);
         
         writeObjectConfig = true;
         sendObjectConfig = true;
@@ -948,8 +940,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       }
         
       // modif network config
-      
-      // change object config
       if (doc.containsKey("new_apName")) 
       {
         strlcpy(  aConfig.networkConfig.apName,
@@ -988,6 +978,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
           writeNetworkConfig = true;
         }
+        
+        sendNetworkConfig = true;
       }
 
       if (doc.containsKey("new_apNetMsk")) 
@@ -1006,6 +998,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
           writeNetworkConfig = true;
         }
+
+        sendNetworkConfig = true;
       }
       
       // actions sur le esp8266
@@ -1027,7 +1021,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       if (writeObjectConfig)
       {
         aConfig.writeObjectConfig("/config/objectconfig.txt");
-        aConfig.printJsonFile("/config/objectconfig.txt");
+        //aConfig.printJsonFile("/config/objectconfig.txt");
         
         // update statut
         uneFois = true;
@@ -1043,7 +1037,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       if (writeNetworkConfig)
       {
         aConfig.writeNetworkConfig("/config/networkconfig.txt");
-        aConfig.printJsonFile("/config/networkconfig.txt");
+        //aConfig.printJsonFile("/config/networkconfig.txt");
       }
 
       // resend network config
@@ -1078,32 +1072,7 @@ void checkCharacter(char* toCheck, char* allowed, char replaceChar)
   Serial.println("");
 }
 
-
-void checkCode()
+uint16_t checkValeur(uint16_t valeur, uint16_t minValeur, uint16_t maxValeur)
 {
-  
-  
+  return(min(max(valeur,minValeur), maxValeur));
 }
-
-void checkApName()
-{
-  
-  /*
-  char *allowed = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
-
-  for (int i = 0; i < strlen(aConfig.networkConfig.apName); i++)
-  {
-    if (!strchr(allowed, aConfig.networkConfig.apName[i]))
-    {
-      aConfig.networkConfig.apName[i]='A';
-    }
-    Serial.print(aConfig.networkConfig.apName[i]);
-  }
-  Serial.println("");
-  */
-}
-
-
-// https://forum.arduino.cc/t/character-array-check-for-non-allowed-values/626141/5
-// MYDEBUG
-// 
