@@ -31,7 +31,9 @@
  * check sur valeur min et max
  * check sur char du code
  * bug quand on passe de bloquee a fermee via le webui
- * bug leds
+ * bug leds  , 
+ * 			check https://github.com/FastLED/FastLED/issues/1269
+			https://github.com/FastLED/FastLED/issues/1260
  * 
 */
 
@@ -206,11 +208,25 @@ void setup()
   }
 
   // WIFI  
+  /*
   // AP MODE
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
   WiFi.softAP(aConfig.networkConfig.apName, aConfig.networkConfig.apPassword);
+  */
 
+  // CLIENT MODE
+  const char* ssid = "MYDEBUG";
+  const char* password = "782ePAFm";
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) 
+  {
+        Serial.printf("WiFi Failed!\n");
+        
+    }
+  
   // WEB SERVER
   // Print ESP Local IP Address
   Serial.print(F("localIP: "));
@@ -839,7 +855,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       bool sendNetworkConfig = false;
       
       // change object config
-      if (doc.containsKey("new_objectName")) 
+      if (doc.containsKey("new_objectName"))
       {
         strlcpy(  aConfig.objectConfig.objectName,
                   doc["new_objectName"],
@@ -854,6 +870,9 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         strlcpy(  aConfig.objectConfig.codeSerrure,
                   doc["new_codeSerrure"],
                   sizeof(aConfig.objectConfig.codeSerrure));
+
+        // check for unsupported char
+        checkCharacter(aConfig.objectConfig.codeSerrure, "0123456789ABCD*", '0');
         
         writeObjectConfig = true;
         sendObjectConfig = true;
@@ -937,7 +956,11 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
                   doc["new_apName"],
                   sizeof(aConfig.networkConfig.apName));
 
+        // check for unsupported char
+        checkCharacter(aConfig.networkConfig.apName, "ABCDEFGHIJKLMNOPQRSTUVWYZ", 'A');
+        
         writeNetworkConfig = true;
+        sendNetworkConfig = true;
       }
 
       if (doc.containsKey("new_apPassword")) 
@@ -1039,3 +1062,48 @@ void notFound(AsyncWebServerRequest *request)
 {
     request->send(404, "text/plain", "Not found");
 }
+
+void checkCharacter(char* toCheck, char* allowed, char replaceChar)
+{
+  //char *allowed = "0123456789ABCD*";
+
+  for (int i = 0; i < strlen(toCheck); i++)
+  {
+    if (!strchr(allowed, toCheck[i]))
+    {
+      toCheck[i]=replaceChar;
+    }
+    Serial.print(toCheck[i]);
+  }
+  Serial.println("");
+}
+
+
+void checkCode()
+{
+  
+  
+}
+
+void checkApName()
+{
+  
+  /*
+  char *allowed = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
+
+  for (int i = 0; i < strlen(aConfig.networkConfig.apName); i++)
+  {
+    if (!strchr(allowed, aConfig.networkConfig.apName[i]))
+    {
+      aConfig.networkConfig.apName[i]='A';
+    }
+    Serial.print(aConfig.networkConfig.apName[i]);
+  }
+  Serial.println("");
+  */
+}
+
+
+// https://forum.arduino.cc/t/character-array-check-for-non-allowed-values/626141/5
+// MYDEBUG
+// 

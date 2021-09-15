@@ -351,7 +351,7 @@ class M_config
 	objectConfig.tailleCode = 4;
 	objectConfig.nbErreurCodeMax = 3;
 	objectConfig.nbErreurCode = 0;
-	objectConfig.delaiBlocage = 10;
+	objectConfig.delaiBlocage = 5;
 	objectConfig.statutSerrureActuel = 1;
 	objectConfig.statutSerrurePrecedent = 1;
 	

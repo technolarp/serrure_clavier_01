@@ -8,7 +8,7 @@
 	"tailleCode": 4,
 	"nbErreurCodeMax": 3,
 	"nbErreurCode": 0,
-	"intervalBlocage": 5,
+	"delaiBlocage": 5,
 	"statutSerrureActuel": 1,
 	"statutSerrurePrecedent": 1
 }
