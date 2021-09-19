@@ -181,7 +181,9 @@ void setup()
     delay(1000);
   }
 
-  // WIFI  
+  // WIFI
+  WiFi.disconnect(true);
+  
   // AP MODE
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(aConfig.networkConfig.apIP, aConfig.networkConfig.apIP, aConfig.networkConfig.apNetMsk);
@@ -189,16 +191,15 @@ void setup()
   
   /*
   // CLIENT MODE POUR DEBUG
-  const char* ssid = "MYDEBUG";
-  const char* password = "-------";
+  const char* ssid = "SSID";
+  const char* password = "PASSWORD";
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED) 
   {
-        Serial.printf("WiFi Failed!\n");
-        
-    }
+    Serial.printf("WiFi Failed!\n");
+  }
   */
   
   // WEB SERVER
@@ -1000,6 +1001,23 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           writeNetworkConfig = true;
         }
 
+        sendNetworkConfig = true;
+      }
+
+      if ( doc.containsKey("new_defaultObjectConfig") && doc["new_defaultObjectConfig"]==1 )
+      {
+        Serial.println(F("reset to default object config"));
+        aConfig.writeDefaultObjectConfig("/config/objectconfig.txt");
+        
+        sendObjectConfig = true;
+        uneFois = true;
+      }
+
+      if ( doc.containsKey("new_defaultNetworkConfig") && doc["new_defaultNetworkConfig"]==1 )
+      {
+        Serial.println(F("reset to default network config"));
+        aConfig.writeDefaultNetworkConfig("/config/networkconfig.txt");
+        
         sendNetworkConfig = true;
       }
       
