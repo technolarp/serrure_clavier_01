@@ -1,0 +1,14 @@
+{
+	"objectId": 1,
+	"groupId": 1,
+	"objectName": "serrure clavier",
+	"activeLeds": 8,
+    "brightness": 80,
+	"codeSerrure": "12345678",
+	"tailleCode": 4,
+	"nbErreurCodeMax": 3,
+	"nbErreurCode": 0,
+	"delaiBlocage": 5,
+	"statutSerrureActuel": 1,
+	"statutSerrurePrecedent": 1
+}
