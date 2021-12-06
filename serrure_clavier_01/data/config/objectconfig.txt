@@ -1,14 +1,15 @@
 {
-	"objectId": 1,
-	"groupId": 1,
-	"objectName": "serrure clavier",
-	"activeLeds": 8,
-    "brightness": 80,
-	"codeSerrure": "12345678",
-	"tailleCode": 4,
-	"nbErreurCodeMax": 3,
-	"nbErreurCode": 0,
-	"delaiBlocage": 5,
-	"statutSerrureActuel": 1,
-	"statutSerrurePrecedent": 1
+"objectId": 1,
+"groupId": 1,
+"objectName": "serrure clavier",
+"activeLeds": 8,
+"brightness": 80,
+"codeSerrure": "12345678",
+"tailleCode": 4,
+"nbErreurCodeMax": 3,
+"nbErreurCode": 0,
+"delaiBlocage": 5,
+"statutActuel": 1,
+"statutPrecedent": 1,
+"couleurs":[[255,0,0],[0,255,0]]
 }

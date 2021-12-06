@@ -8,10 +8,13 @@
 		table {border-collapse:collapse; max-width: 1000px;}
 		td {text-align: center;}
 		</style>
-		<title>%OBJECTNAME%    Back Office</title>
+		<title>Back Office</title>
 	</head>
 	<script>
   lastHeartBeat = Date.now();
+  
+  // leading zero convertor
+  const zeroPad = (num, places) => String(num).padStart(places, '0')
 
   function checkHeartbeat()
   {
@@ -25,6 +28,7 @@
   setInterval(checkHeartbeat, 10000);
   
   var gateway = `ws://${window.location.hostname}/ws`;
+  
   var websocket;
   window.addEventListener('load', onLoad);
   
@@ -79,7 +83,9 @@
 	
 	if (obj.hasOwnProperty('objectName'))
     {
-      document.getElementById("objectName").value = obj.objectName;
+      document.title = obj.objectName + " Back Office";
+	  document.getElementById("objectName").value = obj.objectName;
+	  document.getElementById("objectNameTitle").innerHTML = obj.objectName + " Back Office";
     }
 	
 	if (obj.hasOwnProperty('activeLeds'))
@@ -91,6 +97,18 @@
     {
       document.getElementById("brightness").value = obj.brightness;
       document.getElementById("brightness2").innerHTML = obj.brightness;
+    }
+	
+	if (obj.hasOwnProperty('couleurs'))
+    {
+      for (let i = 0; i < 2 ; i++)
+	  {
+		j=i+1;
+		couleurToChange = 'couleur'+j;
+		newColor="#" + zeroPad(obj.couleurs[i][0].toString(16), 2) + zeroPad(obj.couleurs[i][1].toString(16), 2) + zeroPad(obj.couleurs[i][2].toString(16), 2);
+		document.getElementById(couleurToChange).value = newColor;
+		//console.log(newColor);
+	  }
     }
 	
 	if (obj.hasOwnProperty('tailleCode'))
@@ -119,75 +137,82 @@
       document.getElementById("delaiBlocage2").innerHTML = obj.delaiBlocage;
     }
 	
-	if (obj.hasOwnProperty('statutSerrureActuel'))
+	if (obj.hasOwnProperty('maxLed'))
     {
-		switch (obj.statutSerrureActuel)
+      document.getElementById("activeLeds").max = obj.maxLed;
+      document.getElementById("maxLed").innerHTML = obj.maxLed;
+    }
+	
+	if (obj.hasOwnProperty('statutActuel'))
+    {
+		switch (obj.statutActuel)
 		{
 		case 0:
-			document.getElementById("statutSerrureActuel").innerHTML = "OUVERTE";
+			document.getElementById("statutActuel").innerHTML = "OUVERTE";
 		break;
 		
 		case 1:
-			document.getElementById("statutSerrureActuel").innerHTML = "FERMEE";
+			document.getElementById("statutActuel").innerHTML = "FERMEE";
 		break;
 		
 		case 2:
-			document.getElementById("statutSerrureActuel").innerHTML = "BLOQUEE";
+			document.getElementById("statutActuel").innerHTML = "BLOQUEE";
 		break;
 		
 		case 3:
-			document.getElementById("statutSerrureActuel").innerHTML = "ERREUR";
+			document.getElementById("statutActuel").innerHTML = "ERREUR";
 		break;
 		
 		case 4:
-			document.getElementById("statutSerrureActuel").innerHTML = "RECONFIG";
+			document.getElementById("statutActuel").innerHTML = "RECONFIG";
 		break;
 		
 		case 5:
-			document.getElementById("statutSerrureActuel").innerHTML = "BLINK";
+			document.getElementById("statutActuel").innerHTML = "BLINK";
 		break;
 		
 		default:
-		document.getElementById("statutSerrureActuel").innerHTML = "N/A";
+		document.getElementById("statutActuel").innerHTML = "N/A";
 		}
     }
 	
-	if (obj.hasOwnProperty('statutSerrurePrecedent'))
+	if (obj.hasOwnProperty('statutPrecedent'))
     {
-		switch (obj.statutSerrurePrecedent)
+		switch (obj.statutPrecedent)
 		{
 		case 0:
-			document.getElementById("statutSerrurePrecedent").innerHTML = "OUVERTE";
+			document.getElementById("statutPrecedent").innerHTML = "OUVERTE";
 		break;
 		
 		case 1:
-			document.getElementById("statutSerrurePrecedent").innerHTML = "FERMEE";
+			document.getElementById("statutPrecedent").innerHTML = "FERMEE";
 		break;
 		
 		case 2:
-			document.getElementById("statutSerrurePrecedent").innerHTML = "BLOQUEE";
+			document.getElementById("statutPrecedent").innerHTML = "BLOQUEE";
 		break;
 		
 		case 3:
-			document.getElementById("statutSerrurePrecedent").innerHTML = "ERREUR";
+			document.getElementById("statutPrecedent").innerHTML = "ERREUR";
 		break;
 		
 		case 4:
-			document.getElementById("statutSerrurePrecedent").innerHTML = "RECONFIG";
+			document.getElementById("statutPrecedent").innerHTML = "RECONFIG";
 		break;
 		
 		case 5:
-			document.getElementById("statutSerrureActuel").innerHTML = "BLINK";
+			document.getElementById("statutActuel").innerHTML = "BLINK";
 		break;
 		
 		default:
-		document.getElementById("statutSerrurePrecedent").innerHTML = "N/A";
+		document.getElementById("statutPrecedent").innerHTML = "N/A";
 		}
     }
 	
 	if (obj.hasOwnProperty('apName'))
     {
-      document.getElementById("apName").value = obj.apName;
+      document.getElementById("apNameTitle").innerHTML = obj.apName + " Network config";
+	  document.getElementById("apName").value = obj.apName;
     }
 	
 	if (obj.hasOwnProperty('apPassword') && obj.apPassword != "")
@@ -236,7 +261,7 @@
 	<body>
 	<table>
     <tr>
-      <td colspan="2"><h2>%OBJECTNAME% Back Office</h2></td>
+      <td colspan="2"><h2><span id="objectNameTitle"></span></h2></td>
     </tr>
     <tr>
       <td>Object name </td>
@@ -252,11 +277,19 @@
     </tr>
     <tr>
       <td>ActiveLeds </td>
-      <td><input type="number" id="activeLeds" name="activeLeds" min="1" max="24" onchange="sendNewValue('activeLeds',document.getElementById('activeLeds').value, false);"> &nbsp; &nbsp; &nbsp; &nbsp;  1 - %MAXLEDS%</td>
+      <td><input type="number" id="activeLeds" name="activeLeds" min="1" max="50" onchange="sendNewValue('activeLeds',document.getElementById('activeLeds').value, false);"> &nbsp; &nbsp; &nbsp; &nbsp;  1 - <span id="maxLed"></span></td>
     </tr>
     <tr>
       <td>Brightness : <span id="brightness2"></span></td>
       <td><input class="enabled" id="brightness" name="brightness" type="range" min="0" max="255" step="5" onChange="sendNewValue('brightness',document.getElementById('brightness').value, false);"></td>
+    </tr>
+	<tr>
+      <td>Couleur fermee</td>
+      <td><input type="color" id="couleur1" name="couleur1" onchange="sendNewValue('couleurs','[0,&#34;'+this.value+'&#34;]', false);"></td>
+    </tr>
+	<tr>
+      <td>Couleur ouverte</td>
+      <td><input type="color" id="couleur2" name="couleur2" onchange="sendNewValue('couleurs','[1,&#34;'+this.value+'&#34;]', false);"></td>
     </tr>
 	<tr>
       <td>Taille de code </td>
@@ -281,17 +314,17 @@
 	<tr>
       <td>Statuts Serrure</td>
       <td>
-		<button onclick="sendNewValue('statutSerrureActuel',0, false);">Ouverte</button>
-		<button onclick="sendNewValue('statutSerrureActuel',1, false);">Fermée</button>
-		<button onclick="sendNewValue('statutSerrureActuel',2, false);">Bloquée</button>
+		<button onclick="sendNewValue('statutActuel',0, false);">Ouverte</button>
+		<button onclick="sendNewValue('statutActuel',1, false);">Fermée</button>
+		<button onclick="sendNewValue('statutActuel',2, false);">Bloquée</button>
 	  </td>
     </tr>
 	<tr>
       <td>Statuts Serrure</td>
-      <td>statut Serrure Precedent : <span id="statutSerrurePrecedent"></span><br>statut Serrure Actuel : <span id="statutSerrureActuel"></span></td>
+      <td>statut Serrure Precedent : <span id="statutPrecedent"></span><br>statut Serrure Actuel : <span id="statutActuel"></span></td>
     </tr>
 	<tr>
-      <td colspan="2"><h2>%APNAME% Network config</h2></td>
+      <td colspan="2"><h2><span id="apNameTitle"></span></h2></td>
     </tr>
     <tr>
       <td>AP name </td>
@@ -323,7 +356,7 @@
     </tr>
 	<tr>
       <td>BLINK esp8266</td>
-      <td><button onclick="sendNewValue('statutSerrureActuel',5);">BLINK</button></td>
+      <td><button onclick="sendNewValue('statutActuel',5);">BLINK</button></td>
     </tr>
 	<tr>
       <td>Default Object config</td>
