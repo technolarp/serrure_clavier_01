@@ -99,6 +99,17 @@
       document.getElementById("brightness2").innerHTML = obj.brightness;
     }
 	
+	if (obj.hasOwnProperty('intervalScintillement'))
+    {
+      document.getElementById("intervalScintillement").value = obj.intervalScintillement;
+      document.getElementById("intervalScintillement2").innerHTML = obj.intervalScintillement;
+    }
+	
+	if (obj.hasOwnProperty('scintillementOnOff'))
+    {
+      document.getElementById("scintillementOnOff").value = obj.scintillementOnOff;
+    }
+	
 	if (obj.hasOwnProperty('couleurs'))
     {
       for (let i = 0; i < 2 ; i++)
@@ -107,18 +118,23 @@
 		couleurToChange = 'couleur'+j;
 		newColor="#" + zeroPad(obj.couleurs[i][0].toString(16), 2) + zeroPad(obj.couleurs[i][1].toString(16), 2) + zeroPad(obj.couleurs[i][2].toString(16), 2);
 		document.getElementById(couleurToChange).value = newColor;
-		//console.log(newColor);
 	  }
     }
 	
 	if (obj.hasOwnProperty('tailleCode'))
     {
       document.getElementById("tailleCode").value = obj.tailleCode;
+	  codeToChange = document.getElementById("codeSerrure").value + "00000000";
+	  
+	  document.getElementById("codeSerrure").value = codeToChange.substring(0, document.getElementById("tailleCode").value);
     }
 	
 	if (obj.hasOwnProperty('codeSerrure'))
     {
       document.getElementById("codeSerrure").value = obj.codeSerrure.substring(0, document.getElementById("tailleCode").value);
+	  
+	  console.log(obj.codeSerrure);
+	  console.log(obj.codeSerrure.substring(0, document.getElementById("tailleCode").value));
     }	
 	
 	if (obj.hasOwnProperty('nbErreurCodeMax'))
@@ -255,7 +271,26 @@
     }
   }
   
+  function sendNewCode(name, val) 
+  {
+	val = val + "00000000";
+	val = val.substring(0, document.getElementById("tailleCode").value);
+	
+	console.log("{\"new_"+ name + "\":\"" + val + "\"}");
+	websocket.send("{\"new_"+ name + "\":\"" + val + "\"}");
+  }
   
+  function updateScintillement()
+  {
+	if (document.getElementById("scintillementOnOff").value == 0)
+	{
+		document.getElementById("intervalScintillement").disabled = true;
+	}
+	else
+	{
+		document.getElementById("intervalScintillement").disabled = false;
+	}
+  }
   
   </script>  
 	<body>
@@ -284,6 +319,14 @@
       <td><input class="enabled" id="brightness" name="brightness" type="range" min="0" max="255" step="5" onChange="sendNewValue('brightness',document.getElementById('brightness').value, false);"></td>
     </tr>
 	<tr>
+      <td>Scintillement : <span id="intervalScintillement2"></span></td>
+		<td>
+			OFF <input class="enabled" id="scintillementOnOff" name="scintillementOnOff" type="range" style="width:30px;" min="0" max="1" step="1" onChange="sendNewValue('scintillementOnOff',this.value, false); updateScintillement();"> ON
+			<br>
+			<input class="enabled" id="intervalScintillement" name="intervalScintillement" type="range" min="0" max="100" step="1" onChange="sendNewValue('intervalScintillement',this.value, false);">
+		</td>
+    </tr>
+	<tr>
       <td>Couleur fermee</td>
       <td><input type="color" id="couleur1" name="couleur1" onchange="sendNewValue('couleurs','[0,&#34;'+this.value+'&#34;]', false);"></td>
     </tr>
@@ -297,7 +340,7 @@
     </tr>
 	<tr>
       <td>Code serrure </td>
-      <td><input type="text" id="codeSerrure" name="codeSerrure" onchange="sendNewValue('codeSerrure',document.getElementById('codeSerrure').value, true);"> &nbsp; &nbsp; &nbsp; &nbsp; 8 characters max in [0123456789ABCD*]</td>
+      <td><input type="text" id="codeSerrure" name="codeSerrure" onchange="sendNewCode('codeSerrure',this.value);"> &nbsp; &nbsp; &nbsp; &nbsp; 8 characters max in [0123456789ABCD*]</td>
     </tr>	
 	<tr>
       <td>Nombre Erreur Code Actuel : <span id="nbErreurCode" ></span>&nbsp;</td>

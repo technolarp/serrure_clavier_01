@@ -2,9 +2,10 @@
 #include <ArduinoJson.h> // arduino json v6  // https://github.com/bblanchon/ArduinoJson
 
 // to upload config dile : https://github.com/earlephilhower/arduino-esp8266littlefs-plugin/releases
-#define SIZE_ARRAY 20
-#define MAX_SIZE_CODE 8
-#define JSONBUFFERSIZE 1024
+#define SIZE_ARRAY 21
+#define MAX_SIZE_CODE 9
+#define NB_COULEURS 2
+#define JSONBUFFERSIZE 2048
 
 #include <IPAddress.h>
 
@@ -22,6 +23,10 @@ class M_config
     
     uint8_t activeLeds;
     uint8_t brightness;
+
+    uint16_t intervalScintillement;
+    uint16_t scintillementOnOff;
+    
     uint8_t tailleCode;
     
     uint8_t nbErreurCodeMax;
@@ -31,7 +36,7 @@ class M_config
     uint8_t statutActuel;
     uint8_t statutPrecedent;
 
-    CRGB couleurs[2];
+    CRGB couleurs[NB_COULEURS];
   };
   
   // creer une structure
@@ -80,6 +85,10 @@ class M_config
       
       objectConfig.activeLeds = doc["activeLeds"];
       objectConfig.brightness = doc["brightness"];
+
+      objectConfig.intervalScintillement = doc["intervalScintillement"];
+      objectConfig.scintillementOnOff = doc["scintillementOnOff"];
+      
       objectConfig.tailleCode = doc["tailleCode"];
       
       objectConfig.nbErreurCodeMax = doc["nbErreurCodeMax"];
@@ -93,7 +102,7 @@ class M_config
       {
         JsonArray couleurArray=doc["couleurs"];
         
-        for (uint8_t i=0;i<2;i++)
+        for (uint8_t i=0;i<NB_COULEURS;i++)
         {
           JsonArray rgbArray=couleurArray[i];
 
@@ -110,12 +119,12 @@ class M_config
                   doc["objectName"],
                   SIZE_ARRAY);
       }
-
+      
       if (doc.containsKey("codeSerrure"))
       { 
         strlcpy(  objectConfig.codeSerrure,
                   doc["codeSerrure"],
-                  sizeof(objectConfig.codeSerrure));
+                  MAX_SIZE_CODE);
       }
     }
       
@@ -124,7 +133,7 @@ class M_config
   }
 
   void writeObjectConfig(const char * filename)
-  { 
+  {
     // Delete existing file, otherwise the configuration is appended to the file
     LittleFS.remove(filename);
     
@@ -137,8 +146,7 @@ class M_config
     }
 
     // Allocate a temporary JsonDocument
-    //StaticJsonDocument<JSONBUFFERSIZE> doc;
-    DynamicJsonDocument doc(JSONBUFFERSIZE);
+    StaticJsonDocument<JSONBUFFERSIZE> doc;
 
     doc["objectName"] = objectConfig.objectName;
     doc["codeSerrure"] = objectConfig.codeSerrure;
@@ -148,6 +156,10 @@ class M_config
 
     doc["activeLeds"] = objectConfig.activeLeds;
     doc["brightness"] = objectConfig.brightness;
+
+    doc["intervalScintillement"] = objectConfig.intervalScintillement;
+    doc["scintillementOnOff"] = objectConfig.scintillementOnOff;
+    
     doc["tailleCode"] = objectConfig.tailleCode;
     
     doc["nbErreurCodeMax"] = objectConfig.nbErreurCodeMax;
@@ -159,7 +171,7 @@ class M_config
 
     JsonArray couleurArray = doc.createNestedArray("couleurs");
 
-    for (uint8_t i=0;i<2;i++)
+    for (uint8_t i=0;i<NB_COULEURS;i++)
     {
       JsonArray couleur_x = couleurArray.createNestedArray();
       
@@ -185,6 +197,10 @@ class M_config
 
     objectConfig.activeLeds = 8;
     objectConfig.brightness = 80;
+
+    objectConfig.intervalScintillement = 50;
+    objectConfig.scintillementOnOff = 0;
+    
     objectConfig.tailleCode = 4;
     
     objectConfig.nbErreurCodeMax = 3;
@@ -203,12 +219,12 @@ class M_config
     objectConfig.couleurs[1].blue =  0;
     
     strlcpy( objectConfig.objectName,
-             "serrure rfid",
-             sizeof("serrure rfid"));
+             "serrure 01",
+             SIZE_ARRAY);
 
     strlcpy(  objectConfig.codeSerrure,
                   "12345678",
-                  sizeof("12345678"));
+                  MAX_SIZE_CODE);
     
     writeObjectConfig(filename);
   }
@@ -260,14 +276,14 @@ class M_config
       { 
         strlcpy(  networkConfig.apName,
                   doc["apName"],
-                  sizeof(networkConfig.apName));
+                  SIZE_ARRAY);
       }
 
       if (doc.containsKey("apPassword"))
       { 
         strlcpy(  networkConfig.apPassword,
                   doc["apPassword"],
-                  sizeof(networkConfig.apPassword));
+                  SIZE_ARRAY);
       }
     }
       
@@ -324,12 +340,12 @@ class M_config
   void writeDefaultNetworkConfig(const char * filename)
   {
   strlcpy(  networkConfig.apName,
-            "SERRURERFID",
-            sizeof("SERRURERFID"));
+            "SERRURE CLAVIER",
+            SIZE_ARRAY);
   
   strlcpy(  networkConfig.apPassword,
             "",
-            sizeof(""));
+            SIZE_ARRAY);
 
   networkConfig.apIP[0]=192;
   networkConfig.apIP[1]=168;
