@@ -1,0 +1,17 @@
+{
+"objectId": 1,
+"groupId": 1,
+"objectName": "serrure 01",
+"activeLeds": 8,
+"brightness": 80,
+"intervalScintillement":50,
+"scintillementOnOff":0,
+"codeSerrure": "12345678",
+"tailleCode": 4,
+"nbErreurCodeMax": 3,
+"nbErreurCode": 0,
+"delaiBlocage": 5,
+"statutActuel": 1,
+"statutPrecedent": 1,
+"couleurs":[[255,0,0],[0,255,0]]
+}
