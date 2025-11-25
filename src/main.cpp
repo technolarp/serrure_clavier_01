@@ -2,7 +2,7 @@
    ----------------------------------------------------------------------------
    TECHNOLARP - https://technolarp.github.io/
    SERRURE CLAVIER 01 - https://github.com/technolarp/serrure_clavier_01
-   version 1.0 - 09/2023
+   version 1.1.0 - 05/2025
    ----------------------------------------------------------------------------
 */
 
@@ -113,7 +113,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len); 
 void handleWebsocketBuffer();
 void notFound(AsyncWebServerRequest *request);
-void checkCharacter(char* toCheck, const char* allowed, char replaceChar);
+void checkCharacter(char *toCheck, const char *allowed, char replaceChar);
 void sendObjectConfig();
 void writeObjectConfig();
 void sendNetworkConfig();
@@ -141,7 +141,7 @@ void setup()
   Serial.println(F("----------------------------------------------------------------------------"));
   Serial.println(F("TECHNOLARP - https://technolarp.github.io/"));
   Serial.println(F("SERRURE CLAVIER 01 - https://github.com/technolarp/serrure_clavier_01"));
-  Serial.println(F("version 1.0 - 09/2023"));
+  Serial.println(F("version 1.1.0 - 05/2025"));
   Serial.println(F("----------------------------------------------------------------------------"));
 
   // I2C RESET
@@ -802,6 +802,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         handleWebSocketMessage(arg, data, len);
         break;
         
+      case WS_EVT_PING:
       case WS_EVT_PONG:
       case WS_EVT_ERROR:
         break;
@@ -824,7 +825,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
 void handleWebsocketBuffer()
 {
-    DynamicJsonDocument doc(JSONBUFFERSIZE);
+    JsonDocument doc;
     
     DeserializationError error = deserializeJson(doc, bufferWebsocket);
     if (error)
@@ -842,7 +843,7 @@ void handleWebsocketBuffer()
       // **********************************************
       // modif object config
       // **********************************************
-      if (doc.containsKey("new_objectName"))
+      if (doc["new_objectName"].is<const char*>())
       {
         strlcpy(  aConfig.objectConfig.objectName,
                   doc["new_objectName"],
@@ -852,7 +853,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_objectId")) 
+      if (doc["new_objectId"].is<unsigned short>()) 
       {
         uint16_t tmpValeur = doc["new_objectId"];
         aConfig.objectConfig.objectId = checkValeur(tmpValeur,1,1000);
@@ -861,7 +862,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_groupId")) 
+      if (doc["new_groupId"].is<unsigned short>()) 
       {
         uint16_t tmpValeur = doc["new_groupId"];
         aConfig.objectConfig.groupId = checkValeur(tmpValeur,1,1000);
@@ -870,7 +871,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_activeLeds")) 
+      if (doc["new_activeLeds"].is<unsigned short>()) 
       {
         aFastled.allLedOff();
         
@@ -884,7 +885,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_brightness"))
+      if (doc["new_brightness"].is<unsigned short>())
       {
         uint16_t tmpValeur = doc["new_brightness"];
         aConfig.objectConfig.brightness = checkValeur(tmpValeur,0,255);
@@ -894,7 +895,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_intervalScintillement"))
+      if (doc["new_intervalScintillement"].is<unsigned short>())
       {
         uint16_t tmpValeur = doc["new_intervalScintillement"];
         aConfig.objectConfig.intervalScintillement = checkValeur(tmpValeur,0,1000);
@@ -904,7 +905,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
       
-      if (doc.containsKey("new_scintillementOnOff"))
+      if (doc["new_scintillementOnOff"].is<unsigned short>())
       {
         uint16_t tmpValeur = doc["new_scintillementOnOff"];
         aConfig.objectConfig.scintillementOnOff = checkValeur(tmpValeur,0,1);
@@ -919,7 +920,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_tailleCode")) 
+      if (doc["new_tailleCode"].is<unsigned short>()) 
       {
         uint16_t tmpValeur = doc["new_tailleCode"];
         aConfig.objectConfig.tailleCode = checkValeur(tmpValeur,1,8);
@@ -928,21 +929,21 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_codeSerrure")) 
+      if (doc["new_codeSerrure"].is<const char*>()) 
       {
         strlcpy(  aConfig.objectConfig.codeSerrure,
                   doc["new_codeSerrure"],
                   MAX_SIZE_CODE);
 
         // check for unsupported char
-        const char listeCheck[] = "0123456789ABCD*";
+        char const * listeCheck = "0123456789ABCD*";
         checkCharacter(aConfig.objectConfig.codeSerrure, listeCheck, '0');
         
         writeObjectConfigFlag = true;
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_nbErreurCodeMax")) 
+      if (doc["new_nbErreurCodeMax"].is<unsigned short>()) 
       {
         uint16_t tmpValeur = doc["new_nbErreurCodeMax"];
         aConfig.objectConfig.nbErreurCodeMax = checkValeur(tmpValeur,1,50);
@@ -951,7 +952,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
       
-      if (doc.containsKey("new_delaiBlocage")) 
+      if (doc["new_delaiBlocage"].is<unsigned short>()) 
       {
         uint16_t tmpValeur = doc["new_delaiBlocage"];
         aConfig.objectConfig.delaiBlocage = checkValeur(tmpValeur,5,300);
@@ -960,7 +961,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
       
-      if (doc.containsKey("new_statutActuel"))
+      if (doc["new_statutActuel"].is<unsigned short>())
       {
         uint16_t tmpValeur = doc["new_statutActuel"];
         aConfig.objectConfig.statutPrecedent=aConfig.objectConfig.statutActuel;
@@ -974,7 +975,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if ( doc.containsKey("new_resetErreur") && doc["new_resetErreur"]==1 )
+      if ( doc["new_resetErreur"].is<unsigned short>() && doc["new_resetErreur"]==1 )
       {
         Serial.println(F("Reset erreurs"));
         aConfig.objectConfig.nbErreurCode = 0;
@@ -983,7 +984,7 @@ void handleWebsocketBuffer()
         sendObjectConfigFlag = true;
       }
 
-      if (doc.containsKey("new_couleurs")) 
+      if (doc["new_couleurs"].is<JsonVariant>()) 
       {
         JsonArray newCouleur = doc["new_couleurs"];
 
@@ -1009,21 +1010,21 @@ void handleWebsocketBuffer()
       // **********************************************
       // modif network config
       // **********************************************
-      if (doc.containsKey("new_apName")) 
+      if (doc["new_apName"].is<const char*>()) 
       {
         strlcpy(  aConfig.networkConfig.apName,
                   doc["new_apName"],
                   sizeof(aConfig.networkConfig.apName));
       
         // check for unsupported char
-        const char listeCheck[] = "ABCDEFGHIJKLMNOPQRSTUVWYXZ0123456789_-";
+        char const * listeCheck = "ABCDEFGHIJKLMNOPQRSTUVWYXZ0123456789_-";
         checkCharacter(aConfig.networkConfig.apName, listeCheck, 'A');
         
         writeNetworkConfigFlag = true;
         sendNetworkConfigFlag = true;
       }
       
-      if (doc.containsKey("new_apPassword")) 
+      if (doc["new_apPassword"].is<const char*>()) 
       {
         strlcpy(  aConfig.networkConfig.apPassword,
                   doc["new_apPassword"],
@@ -1033,7 +1034,7 @@ void handleWebsocketBuffer()
         sendNetworkConfigFlag = true;
       }
       
-      if (doc.containsKey("new_apIP")) 
+      if (doc["new_apIP"].is<const char*>()) 
       {
         char newIPchar[16] = "";
       
@@ -1053,7 +1054,7 @@ void handleWebsocketBuffer()
         sendNetworkConfigFlag = true;
       }
       
-      if (doc.containsKey("new_apNetMsk")) 
+      if (doc["new_apNetMsk"].is<const char*>()) 
       {
         char newNMchar[16] = "";
       
@@ -1074,13 +1075,13 @@ void handleWebsocketBuffer()
       }
       
       // actions sur le esp8266
-      if ( doc.containsKey("new_restart") && doc["new_restart"]==1 )
+      if ( doc["new_restart"].is<unsigned char>() && doc["new_restart"]==1 )
       {
         Serial.println(F("RESTART RESTART RESTART"));
         ESP.restart();
       }
       
-      if ( doc.containsKey("new_refresh") && doc["new_refresh"]==1 )
+      if ( doc["new_refresh"].is<unsigned char>() && doc["new_refresh"]==1 )
       {
         Serial.println(F("REFRESH"));
       
@@ -1088,7 +1089,7 @@ void handleWebsocketBuffer()
         sendNetworkConfigFlag = true;
       }
       
-      if ( doc.containsKey("new_defaultObjectConfig") && doc["new_defaultObjectConfig"]==1 )
+      if ( doc["new_defaultObjectConfig"].is<unsigned char>() && doc["new_defaultObjectConfig"]==1 )
       {
         aConfig.writeDefaultObjectConfig("/config/objectconfig.txt");
         Serial.println(F("reset to default object config"));
@@ -1102,7 +1103,7 @@ void handleWebsocketBuffer()
         uneFois = true;
       }
       
-      if ( doc.containsKey("new_defaultNetworkConfig") && doc["new_defaultNetworkConfig"]==1 )
+      if ( doc["new_defaultNetworkConfig"].is<unsigned char>() && doc["new_defaultNetworkConfig"]==1 )
       {
         aConfig.writeDefaultNetworkConfig("/config/networkconfig.txt");
         Serial.println(F("reset to default network config"));          
@@ -1148,11 +1149,12 @@ void notFound(AsyncWebServerRequest *request)
     request->send(404, "text/plain", "Not found");
 }
 
-void checkCharacter(char* toCheck, const char* allowed, char replaceChar)
+void checkCharacter(char *toCheck, const char *allowed, char replaceChar)
 {
   for (uint8_t i = 0; i < strlen(toCheck); i++)
   {
-    if (!strchr(allowed, toCheck[i]))
+    Serial.print(toCheck[i]);
+    if (strchr(allowed, toCheck[i]) == NULL)
     {
       toCheck[i]=replaceChar;
     }
