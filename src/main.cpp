@@ -165,9 +165,6 @@ void setup()
   aFastled.setNbLed(aConfig.objectConfig.activeLeds);
   aFastled.setControlBrightness(aConfig.objectConfig.scintillementOnOff);
   aFastled.setIntervalControlBrightness(aConfig.objectConfig.intervalScintillement);
-  
-  // animation led de depart
-  aFastled.animationDepart(50, aFastled.getNbLed()*2, CRGB::Blue);
 
   // KEYPAD
   aKeypad = new M_keypad();
@@ -199,6 +196,9 @@ void setup()
 
     delay(1000);
   }
+    
+  // animation led de depart
+  aFastled.animationDepart(50, aFastled.getNbLed()*2, CRGB::Blue);
 
   // WIFI
   WiFi.disconnect(true);
@@ -848,6 +848,8 @@ void handleWebsocketBuffer()
         strlcpy(  aConfig.objectConfig.objectName,
                   doc["new_objectName"],
                   SIZE_ARRAY);
+
+        checkCharacter(aConfig.objectConfig.objectName, listeCheck, '_');
 
         writeObjectConfigFlag = true;
         sendObjectConfigFlag = true;
