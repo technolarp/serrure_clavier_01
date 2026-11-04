@@ -14,6 +14,9 @@ Une fois la serrure mise sous tension par batterie ou câble USB, elle se place 
 Un exemple du kit technoLARP monté pour une serrure_clavier_01
 <img src="./images/technolarp_objet_serrure_clavier_01.jpg" width="600">
 
+Voici un exemple de casing plus avancé
+<img src="./images/serrure_clavier_01_casing.png" width="400">
+
 ## Composants
 Vous aurez besoin pour monter la serrure_clavier_01
 
