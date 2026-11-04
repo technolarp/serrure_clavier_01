@@ -14,8 +14,11 @@ Une fois la serrure mise sous tension par batterie ou câble USB, elle se place 
 Un exemple du kit technoLARP monté pour une serrure_clavier_01
 <img src="./images/technolarp_objet_serrure_clavier_01.jpg" width="600">
 
+## Branchements
+//TODO
+
 ## Composants
-Vous aurez besoin pour monter le VU-mètre
+Vous aurez besoin pour monter la serrure_clavier_01
 
 |  | |
 | :---------------- | :------: |
@@ -25,3 +28,21 @@ Vous aurez besoin pour monter le VU-mètre
 | Un buzzer piezo | <img src="./images/technolarp_buzzer.jpg" height="200"> |
 | Un clavier matriciel 4x4 et 1 module PCF8574 | <img src="./images/technolarp_clavier.jpg" height="200"> |
 | Une batterie 18650 et son support | <img src="./images/technolarp_18650.jpg" width="200"> |
+
+## Installation
+Pour installer le firmware de l'objet, il faut suivre ce [tutorial](https://github.com/technolarp/technolarp.github.io/wiki/Installation-du-firmware)  
+
+
+## BackOffice
+Pour se connecter au back office de l'objet, il faut suivre ce [tutorial](https://github.com/technolarp/technolarp.github.io/wiki/Connexion-au-back-office-de-l'objet-via-le-wifi)  
+
+//TODO Screenshoots
+
+## Paramètres de gameplay
+Ces paramètres permettent de contrôler le gameplay de l’objet.
+
+//TODO
+
+## Paramètres Réseau
+
+Pour avoir le descriptif des paramètres réseau suivez ce [lien](https://github.com/technolarp/technolarp.github.io/wiki/Param%C3%A8tres-R%C3%A9seau)  
