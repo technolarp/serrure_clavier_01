@@ -10,6 +10,14 @@ Le code par défaut est 1 2 3 4. Pour entrer un code, appuyer sur les touches 0 
 
 Une fois la serrure mise sous tension par batterie ou câble USB, elle se place dans l’état FERMEE. Si la serrure est éteinte, elle enregistre son état actuel et retourne dans cet état à l’allumage.
 
+**[Exemple](#Exemple)** 
+**[Composants](#Composants)**  
+**[Branchements](#Branchements)**   
+**[Installation du firmware](#Installation-du-firmware)**  
+**[Back Office](#BackOffice)**  
+**[Paramètres de gameplay](#param%C3%A8tres-de-gameplay)**  
+**[Paramètres Réseau](#param%C3%A8tres-r%C3%A9seau)** 
+
 ## Exemple
 Un exemple du kit technoLARP monté pour une serrure_clavier_01
 
