@@ -47,7 +47,7 @@ Vous aurez besoin pour monter la serrure_clavier_01
 
 <img src="./images/technolarp_pcb_connecteurs.png" width="600">
 
-## Installation
+## Installation du firmware
 Pour installer le firmware de l'objet, il faut suivre ce [tutorial](https://github.com/technolarp/technolarp.github.io/wiki/Installation-du-firmware)  
 
 ## BackOffice
