@@ -50,7 +50,25 @@ Pour se connecter au back office de l'objet, il faut suivre ce [tutorial](https:
 ## Paramètres de gameplay
 Ces paramètres permettent de contrôler le gameplay de l’objet.
 
-//TODO
+| Nom                           | Descriptif                                                                                                                                                                       |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Object name**               | Le nom de l’objet, composé de 1 à 20 lettres et chiffres                                                                                                                         |
+| **Object ID**                 | Un numéro d’identification de l’objet                                                                                                                                            |
+| **Group ID**                  | Un numéro d’identification du groupe de l’objet                                                                                                                                  |
+| **ActiveLeds**                | Le nombre de segments du panneau. Un segment est un groupe de 1 à 5 leds. Nombre entre 1 et 20.                                                                                  |
+| **ledParSegment**             | Le nombre de leds groupées pour chaque segment du panneau. Entre 1 et 5                                                                                                          |
+| **ActiveLeds**                | Le nombre total de leds utilisées par la bombe. entre 1 et 25                                                                                                                    |
+| **Brightness**                | La luminosité des leds, entre 0 (éteinte) et 255 (pleine intensité)                                                                                                              |
+| **Scintillement**             | Le scintillement permet d’activer le scintillement des leds pour un effet visuel plus ou moins rapide. le slider permet de régler la vitesse du scintillement                    |
+| **couleurs fermée**           | Choix de la couleur quand la serrure est fermée                                                                                                                                  |
+| **couleurs ouverte**          | Choix de la couleur quand la serrure est ouverte                                                                                                                                 |
+| **couleurs transition**       | Choix de la couleur qui indique si un glyphe a été activé                                                                                                                        |
+| **Taille code**               | La taille du code de la serrure. Entre 1 et 8                                                                                                                                    |
+| **Code serrure**              | Le code de la serrure. A choisir parmi les caractères 0 1 2 3 4 5 6 7 8 9 A B C D et *                                                                                           |
+| **Nombre Erreur Code Actuel** | Le nombre de faux codes déjà entrés. Ce nombre repasse à 0 automatiquement quand le bon code est entré. Le bouton reset erreurs permet aussi de remettre ce compteur à 0.        |
+| **Nombre Erreur Code MAX**    | Le nombre maximum d’erreurs. Une fois atteint, la serrure se bloque pendant plusieurs secondes (voir Délai de Blocage).                                                          |
+| **Délai de Blocage**          | Le temps pendant lequel la serrure est bloquée après plusieurs faux codes.                                                                                                       |
+| **Statuts Serrure**           | Le statut actuel de la serrure. Les boutons permettent de forcer un changement de statut.                                                                                        |
 
 ## Paramètres Réseau
 
