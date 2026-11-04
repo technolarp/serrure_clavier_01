@@ -32,6 +32,8 @@ Vous aurez besoin pour monter la serrure_clavier_01
  - Branchez le buzzer sur son port "buzzer"
  - Branchez la batterie sur son port dédié (sur le micro-contrôleur Wemos D1 mini pro)
 
+<img src="./images/technolarp_pcb_connecteurs.png" width="600">
+
 ## Installation
 Pour installer le firmware de l'objet, il faut suivre ce [tutorial](https://github.com/technolarp/technolarp.github.io/wiki/Installation-du-firmware)  
 
